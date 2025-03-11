@@ -1,35 +1,33 @@
-// @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
-
-export default tseslint.config(
-  {
-    ignores: ['eslint.config.mjs'],
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: 'tsconfig.json',
+    tsconfigRootDir: __dirname,
+    sourceType: 'module',
   },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
-  {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.jest,
+  plugins: ['@typescript-eslint/eslint-plugin'],
+  extends: [
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended',
+  ],
+  root: true,
+  env: {
+    node: true,
+    jest: true,
+  },
+  ignorePatterns: ['.eslintrc.js'],
+  rules: {
+    '@typescript-eslint/interface-name-prefix': 'off',  // Thay đổi từ 'on' thành 'off'
+    '@typescript-eslint/explicit-function-return-type': 'off',  // Thay đổi từ 'on' thành 'off'
+    '@typescript-eslint/explicit-module-boundary-types': 'off',  // Thay đổi từ 'on' thành 'off'
+    '@typescript-eslint/no-explicit-any': 'off',  // Thay đổi từ 'on' thành 'off'
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        vars: 'all', // Áp dụng cho tất cả các biến
+        args: 'after-used', // Kiểm tra các tham số hàm sau khi sử dụng
+        ignoreRestSiblings: false, // Kiểm tra các phần tử bị bỏ qua trong destructuring
       },
-      ecmaVersion: 5,
-      sourceType: 'module',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    ],
   },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
-    },
-  },
-);
+};
