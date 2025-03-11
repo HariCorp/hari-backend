@@ -10,7 +10,18 @@ import { KafkaExplorerService } from './kafka-explorer.service';
 import {KafkaAdminService} from './admin/kafka-admin.service'
 
 @Global()
-@Module({})
+@Module({
+  providers: [
+    KafkaProducerService,
+    KafkaConsumerService,
+    // Các providers khác
+  ],
+  exports: [
+    KafkaProducerService,
+    KafkaConsumerService,
+    // Các exports khác
+  ],
+})
 export class KafkaModule {
   static forRoot(options: KafkaModuleOptions): DynamicModule {
     return {
