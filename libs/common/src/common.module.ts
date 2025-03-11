@@ -1,7 +1,11 @@
-// libs/common/src/common.module.ts
+// libs/common/src/common.module.ts - Updated
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { KafkaModule } from './kafka/kafka.module';
+// Import validation and filters
+import { KafkaValidationPipe } from './validation/kafka-validation.pipe';
+import { ValidationPipe } from './validation/validation.pipe';
+import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from './filters';
 
 @Module({
   imports: [
@@ -20,6 +24,24 @@ import { KafkaModule } from './kafka/kafka.module';
       inject: [ConfigService],
     }),
   ],
-  exports: [KafkaModule],
+  providers: [
+    // Provide validation pipes
+    ValidationPipe,
+    KafkaValidationPipe,
+    // Provide exception filters
+    HttpExceptionFilter,
+    AllExceptionsFilter,
+    KafkaExceptionFilter,
+  ],
+  exports: [
+    KafkaModule,
+    // Export validation pipes
+    ValidationPipe,
+    KafkaValidationPipe,
+    // Export exception filters
+    HttpExceptionFilter,
+    AllExceptionsFilter,
+    KafkaExceptionFilter,
+  ],
 })
 export class CommonModule {}
