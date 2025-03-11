@@ -20,6 +20,6 @@ import { KafkaModule } from './kafka/kafka.module';
       inject: [ConfigService],
     }),
   ],
-  exports: [KafkaModule], // Đảm bảo KafkaModule được export
+  exports: [KafkaModule],
 })
 export class CommonModule {}

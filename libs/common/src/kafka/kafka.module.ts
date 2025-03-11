@@ -7,19 +7,22 @@ import { KafkaConsumerService } from './kafka-consumer.service';
 import { KafkaSerializer } from './serialization/kafka-serializer';
 import { KafkaDeserializer } from './serialization/kafka-deserializer';
 import { KafkaExplorerService } from './kafka-explorer.service';
-import {KafkaAdminService} from './admin/kafka-admin.service'
+import { KafkaAdminService } from './admin/kafka-admin.service';
 
 @Global()
 @Module({
   providers: [
     KafkaProducerService,
     KafkaConsumerService,
-    // Các providers khác
+    KafkaSerializer,
+    KafkaDeserializer,
+    KafkaExplorerService,
+    KafkaAdminService
   ],
   exports: [
     KafkaProducerService,
     KafkaConsumerService,
-    // Các exports khác
+    KafkaAdminService,
   ],
 })
 export class KafkaModule {
@@ -38,9 +41,29 @@ export class KafkaModule {
                 brokers: options.brokers,
                 ssl: options.ssl,
                 sasl: options.sasl,
+                connectionTimeout: 3000, // 3 seconds
+                retry: {
+                  initialRetryTime: 100,
+                  retries: 8,
+                  maxRetryTime: 30000, // 30 seconds max retry time
+                  factor: 2, // Exponential backoff factor
+                  multiplier: 1.5 // Incremental backoff
+                }
               },
               consumer: {
                 groupId: options.groupId,
+                sessionTimeout: 30000, // 30 seconds
+                rebalanceTimeout: 60000, // 60 seconds
+                heartbeatInterval: 3000, // 3 seconds
+                allowAutoTopicCreation: true,
+                maxBytesPerPartition: 1048576, // 1MB
+                maxWaitTimeInMs: 5000 // 5 seconds
+              },
+              producer: {
+                allowAutoTopicCreation: true,
+                idempotent: true, // Ensures exactly-once delivery
+                maxInFlightRequests: 5,
+                transactionalId: `${options.clientId}-transactional`,
               },
             },
           },
@@ -82,9 +105,31 @@ export class KafkaModule {
                     brokers: kafkaOptions.brokers,
                     ssl: kafkaOptions.ssl,
                     sasl: kafkaOptions.sasl,
+                    connectionTimeout: 3000, // 3 seconds
+                    retry: {
+                      initialRetryTime: 100,
+                      retries: 8,
+                      maxRetryTime: 30000, // 30 seconds max retry time
+                      factor: 2, // Exponential backoff factor
+                      multiplier: 1.5 // Incremental backoff
+                    }
                   },
                   consumer: {
                     groupId: kafkaOptions.groupId,
+                    sessionTimeout: 30000, // 30 seconds
+                    rebalanceTimeout: 60000, // 60 seconds
+                    heartbeatInterval: 3000, // 3 seconds
+                    allowAutoTopicCreation: true,
+                    maxBytesPerPartition: 1048576, // 1MB
+                    maxWaitTimeInMs: 5000 // 5 seconds
+                  },
+                  producer: {
+                    allowAutoTopicCreation: true,
+                    idempotent: true, // Ensures exactly-once delivery
+                    maxInFlightRequests: 5,
+                    transactionalId: `${kafkaOptions.clientId}-transactional`,
+                    // Compression helps with larger messages and network efficiency
+                    compression: 'gzip' // Options: none, gzip, snappy, lz4
                   },
                 },
               };

@@ -1,28 +1,34 @@
 import { Module } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ApiGatewayController } from './api-gateway.controller';
+import { CommonModule } from '@app/common';
 
 @Module({
   imports: [
-    ClientsModule.register([
+    CommonModule,
+    ConfigModule.forRoot({
+      envFilePath: './apps/api-gateway/.env',
+    }),
+    ClientsModule.registerAsync([
       {
+        imports: [ConfigModule],
         name: 'KAFKA_SERVICE',
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            brokers: ['localhost:9092'],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.KAFKA,
+          options: {
+            client: {
+              brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
+            },
+            consumer: {
+              groupId: configService.get<string>('KAFKA_GROUP_ID', 'gateway-consumer-group'),
+            },
           },
-          consumer: {
-            groupId: 'gateway-consumer-group', // Đảm bảo groupId khác với user-service nếu cần
-          },
-        },
+        }),
+        inject: [ConfigService],
       },
     ]),
-    ConfigModule.forRoot({
-      envFilePath: 'api-gateway/.env',
-    })
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
