@@ -1,21 +1,17 @@
-// apps/user-service/src/main.ts - Updated
+// apps/user-service/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { UserServiceModule } from './user-service.module';
 import { ConfigService } from '@nestjs/config';
-import { setupHttpApp, setupMicroserviceApp } from '@app/common/bootstrap';
+import { setupMicroserviceApp } from '@app/common/bootstrap';
 import { Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
+  const logger = new Logger('UserService');
   const app = await NestFactory.create(UserServiceModule);
-  
-  // Setup global filters and pipes for HTTP
-  setupHttpApp(app);
   
   // Lấy ConfigService từ ứng dụng
   const configService = app.get(ConfigService);
-  
-  // Lấy giá trị PORT từ env, với giá trị mặc định là 3002 nếu không tìm thấy
-  const port = configService.get<number>('PORT', 3002);
   
   // Setup Kafka microservice
   const microservice = app.connectMicroservice({
@@ -30,16 +26,13 @@ async function bootstrap() {
     },
   });
   
-  // Setup global filters for microservice
+  // Setup global filters cho microservice
   setupMicroserviceApp(app);
   
-  // Khởi động cả HTTP server và kết nối Kafka
+  // Khởi động chỉ Kafka microservice
   await app.startAllMicroservices();
-  await app.listen(port);
   
-  console.log(`User Service is running on port: ${port}`);
-  console.log(`User Service URL: ${await app.getUrl()}`);
-  console.log('User Service Kafka microservice is running');
+  logger.log('\x1b[32m\x1b[1mUser Service Kafka microservice đang chạy');
 }
 
 bootstrap();
