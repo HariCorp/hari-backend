@@ -53,7 +53,5 @@ export class User {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 // Tạo index cho các trường thường dùng để tìm kiếm
-UserSchema.index({ username: 1 }, { unique: true });
-UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ status: 1 });
 UserSchema.index({ roles: 1 });
