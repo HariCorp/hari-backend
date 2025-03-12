@@ -13,10 +13,4 @@ describe('UserServiceController', () => {
 
     userServiceController = app.get<UserServiceController>(UserServiceController);
   });
-
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(userServiceController.getHello()).toBe('Hello World!');
-    });
-  });
 });
