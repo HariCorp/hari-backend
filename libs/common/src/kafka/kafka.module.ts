@@ -9,9 +9,16 @@ import { KafkaDeserializer } from './serialization/kafka-deserializer';
 import { KafkaExplorerService } from './kafka-explorer.service';
 import { KafkaAdminService } from './admin/kafka-admin.service';
 import { KafkaApplicationListener } from './kafka-application.listener';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Global()
 @Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    DiscoveryModule, 
+  ],
   providers: [
     KafkaProducerService,
     KafkaConsumerService,
@@ -19,7 +26,7 @@ import { KafkaApplicationListener } from './kafka-application.listener';
     KafkaDeserializer,
     KafkaExplorerService,
     KafkaAdminService,
-    KafkaApplicationListener, // Thêm listener mới
+    KafkaApplicationListener,
   ],
   exports: [
     KafkaProducerService,
@@ -33,43 +40,6 @@ export class KafkaModule {
       module: KafkaModule,
       imports: [
         DiscoveryModule,
-        ClientsModule.register([
-          {
-            name: 'KAFKA_CLIENT',
-            transport: Transport.KAFKA,
-            options: {
-              client: {
-                clientId: options.clientId,
-                brokers: options.brokers,
-                ssl: options.ssl,
-                sasl: options.sasl,
-                connectionTimeout: 3000, // 3 seconds
-                retry: {
-                  initialRetryTime: 100,
-                  retries: 8,
-                  maxRetryTime: 30000, // 30 seconds max retry time
-                  factor: 2, // Exponential backoff factor
-                  multiplier: 1.5 // Incremental backoff
-                }
-              },
-              consumer: {
-                groupId: options.groupId,
-                sessionTimeout: 30000, // 30 seconds
-                rebalanceTimeout: 60000, // 60 seconds
-                heartbeatInterval: 3000, // 3 seconds
-                allowAutoTopicCreation: true,
-                maxBytesPerPartition: 1048576, // 1MB
-                maxWaitTimeInMs: 5000 // 5 seconds
-              },
-              producer: {
-                allowAutoTopicCreation: true,
-                idempotent: true, // Ensures exactly-once delivery
-                maxInFlightRequests: 5,
-                transactionalId: `${options.clientId}-transactional`,
-              },
-            },
-          },
-        ]),
       ],
       providers: [
         KafkaProducerService,
