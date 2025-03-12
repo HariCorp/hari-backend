@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ApiGatewayController } from './api-gateway.controller';
 import { CommonModule } from '@app/common';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CommonModule } from '@app/common';
         inject: [ConfigService],
       },
     ]),
+    UserModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],

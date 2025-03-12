@@ -22,5 +22,6 @@ export * from './serialization/kafka-serializer';
 export * from './serialization/kafka-deserializer';
 
 export * from './kafka-explorer.service';
+export * from './kafka-application.listener';
 
 export * from './admin/kafka-admin.service';

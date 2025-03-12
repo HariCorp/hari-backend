@@ -4,10 +4,28 @@ import { Transport } from '@nestjs/microservices';
 import { ApiGatewayModule } from './api-gateway.module';
 import { ConfigService } from '@nestjs/config';
 import { setupHttpApp, setupMicroserviceApp } from '@app/common/bootstrap';
+import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   // Tạo ứng dụng HTTP thông thường
   const app = await NestFactory.create(ApiGatewayModule);
+
+  // Thêm prefix cho API
+  app.setGlobalPrefix('api');
+  
+  // Thêm interceptor để biến đổi response
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
+
+  // Thêm validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+  }));
+
+  // Setup CORS
+  app.enableCors();
   
   // Setup global filters and pipes for HTTP
   setupHttpApp(app);
@@ -26,7 +44,7 @@ async function bootstrap() {
         brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
       },
       consumer: {
-        groupId: configService.get<string>('KAFKA_GROUP_ID', 'gateway-consumer-group'),
+        groupId: configService.get<string>('KAFKA_GROUP_ID', 'api-gateway-group'),
       },
     },
   });

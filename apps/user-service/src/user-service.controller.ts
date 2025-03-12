@@ -17,6 +17,7 @@ export class UserServiceController {
     this.logger.log(`Received create user command for username: ${command.data.username}`);
     try {
       const user = await this.userService.create(command.data);
+      this.logger.log(`User created successfully: ${user._id}`);
       return {
         status: 'success',
         data: user
