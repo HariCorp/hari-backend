@@ -1,11 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { KafkaConsumerService } from './kafka-consumer.service';
 import { KAFKA_MESSAGE_HANDLER, KafkaMessageHandlerOptions } from './decorators/kafka-message-handler.decorator';
 
 @Injectable()
-export class KafkaExplorerService implements OnModuleInit {
+export class KafkaExplorerService {
   private readonly logger = new Logger(KafkaExplorerService.name);
 
   constructor(
@@ -14,29 +14,44 @@ export class KafkaExplorerService implements OnModuleInit {
     private readonly kafkaConsumerService: KafkaConsumerService,
   ) {}
 
-  onModuleInit() {
-    this.explore();
-  }
+  // Bỏ onModuleInit, thay vào đó được gọi bởi KafkaApplicationListener
 
   /**
    * Explore all providers to find Kafka message handlers
    */
   explore() {
+    this.logger.log('Starting exploration of Kafka message handlers');
     const providers = this.discoveryService.getProviders();
+    const controllers = this.discoveryService.getControllers();
     
+    // Scan providers
     providers.forEach((wrapper: InstanceWrapper) => {
-      const { instance } = wrapper;
-      
-      if (!instance || typeof instance !== 'object') {
-        return;
-      }
-      
-      this.metadataScanner.scanFromPrototype(
-        instance,
-        Object.getPrototypeOf(instance),
-        (methodName: string) => this.exploreMethod(instance, methodName),
-      );
+      this.scanInstance(wrapper);
     });
+    
+    // Also scan controllers
+    controllers.forEach((wrapper: InstanceWrapper) => {
+      this.scanInstance(wrapper);
+    });
+    
+    this.logger.log('Finished exploration of Kafka message handlers');
+  }
+  
+  /**
+   * Scan an instance for Kafka message handlers
+   */
+  private scanInstance(wrapper: InstanceWrapper) {
+    const { instance } = wrapper;
+    
+    if (!instance || typeof instance !== 'object') {
+      return;
+    }
+    
+    this.metadataScanner.scanFromPrototype(
+      instance,
+      Object.getPrototypeOf(instance),
+      (methodName: string) => this.exploreMethod(instance, methodName),
+    );
   }
 
   /**

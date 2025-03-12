@@ -21,6 +21,7 @@ interface MessageHandler {
 export class KafkaConsumerService implements OnModuleInit {
   private readonly logger = new Logger(KafkaConsumerService.name);
   private readonly messageHandlers = new Map<string, MessageHandler>();
+  private isConnected = false;
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
@@ -28,14 +29,35 @@ export class KafkaConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Không kết nối ở đây, sẽ kết nối sau khi tất cả handlers được đăng ký
+    this.logger.log('KafkaConsumerService initialized');
+  }
+
+  /**
+   * Connect to Kafka after all handlers are registered
+   */
+  async connect() {
+    if (this.isConnected) {
+      return;
+    }
+    
     // Register all message handlers with Kafka client
     const topics = Array.from(this.messageHandlers.keys());
+    
+    if (topics.length === 0) {
+      this.logger.warn('No Kafka message handlers registered');
+      return;
+    }
+    
+    this.logger.log(`Subscribing to ${topics.length} Kafka topics: ${topics.join(', ')}`);
+    
     for (const topic of topics) {
       this.kafkaClient.subscribeToResponseOf(topic);
     }
     
     await this.kafkaClient.connect();
-    this.logger.log('Kafka consumer connected');
+    this.isConnected = true;
+    this.logger.log('Kafka consumer connected successfully');
   }
 
   /**
@@ -55,10 +77,9 @@ export class KafkaConsumerService implements OnModuleInit {
       retryDelay,
     });
 
-    this.logger.log(`Subscribed to Kafka topic: ${topic}`);
+    this.logger.log(`Registered handler for Kafka topic: ${topic}`);
     
-    // We subscribe to the topic via NestJS microservices
-    this.kafkaClient.subscribeToResponseOf(topic);
+    // We don't subscribe to the topic here anymore, it's done in connect()
   }
 
   /**

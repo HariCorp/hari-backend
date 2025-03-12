@@ -8,6 +8,7 @@ import { KafkaSerializer } from './serialization/kafka-serializer';
 import { KafkaDeserializer } from './serialization/kafka-deserializer';
 import { KafkaExplorerService } from './kafka-explorer.service';
 import { KafkaAdminService } from './admin/kafka-admin.service';
+import { KafkaApplicationListener } from './kafka-application.listener';
 
 @Global()
 @Module({
@@ -17,7 +18,8 @@ import { KafkaAdminService } from './admin/kafka-admin.service';
     KafkaSerializer,
     KafkaDeserializer,
     KafkaExplorerService,
-    KafkaAdminService
+    KafkaAdminService,
+    KafkaApplicationListener, // Thêm listener mới
   ],
   exports: [
     KafkaProducerService,
@@ -75,7 +77,8 @@ export class KafkaModule {
         KafkaSerializer,
         KafkaDeserializer,
         KafkaExplorerService,
-        KafkaAdminService
+        KafkaAdminService,
+        KafkaApplicationListener,
       ],
       exports: [
         KafkaProducerService,
@@ -150,6 +153,7 @@ export class KafkaModule {
         KafkaDeserializer,
         KafkaExplorerService,
         KafkaAdminService,
+        KafkaApplicationListener,
       ],
       exports: [
         KafkaProducerService,

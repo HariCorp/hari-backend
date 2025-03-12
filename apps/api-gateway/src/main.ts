@@ -44,7 +44,7 @@ async function bootstrap() {
         brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
       },
       consumer: {
-        groupId: configService.get<string>('KAFKA_GROUP_ID', 'gateway-consumer-group'),
+        groupId: configService.get<string>('KAFKA_GROUP_ID', 'api-gateway-group'),
       },
     },
   });
