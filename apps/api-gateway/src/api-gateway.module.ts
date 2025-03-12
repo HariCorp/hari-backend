@@ -11,6 +11,8 @@ import { UserModule } from './user/user.module';
     CommonModule,
     ConfigModule.forRoot({
       envFilePath: './apps/api-gateway/.env',
+      isGlobal: true,
+      ignoreEnvFile: false,
     }),
     ClientsModule.registerAsync([
       {
