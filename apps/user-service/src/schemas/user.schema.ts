@@ -5,6 +5,12 @@ import { UserRole, UserStatus } from '@app/common/enums';
 
 export type UserDocument = User & Document;
 
+interface SocialAccount {
+  provider: string;
+  providerId: string;
+  accessToken?: string;
+  refreshToken?: string;
+}
 @Schema({ 
   timestamps: true,
   toJSON: {
@@ -48,6 +54,18 @@ export class User {
     default: [UserRole.USER] 
   })
   roles: UserRole[];
+
+  // Trường socialAccounts (mảng các tài khoản xã hội)
+  @Prop({
+    type: [{
+      provider: { type: String, required: true },
+      providerId: { type: String, required: true },
+      accessToken: { type: String, required: false },
+      refreshToken: { type: String, required: false },
+    }],
+    default: [], // Mặc định là mảng rỗng
+  })
+  socialAccounts: SocialAccount[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
