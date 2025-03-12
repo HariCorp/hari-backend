@@ -1,24 +1,23 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { UserServiceController } from './user-service.controller';
 import { UserServiceService } from './user-service.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '@app/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 
 @Module({
   imports: [
-    CommonModule,
+    // Chỉ định rõ đường dẫn đến file .env của User Service
     ConfigModule.forRoot({
-      envFilePath: 'apps/user-service/.env',
-    }),
+      envFilePath: [`apps/user-service/.env`],
+      isGlobal: false,
+      ignoreEnvFile: false,
+    }),    
+    CommonModule,
     MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+      useFactory: async () => ({
+        uri: process.env.MONGODB_URI,
       }),
     }),
     MongooseModule.forFeature([
