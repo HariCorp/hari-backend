@@ -6,6 +6,7 @@ import { KafkaModule } from './kafka/kafka.module';
 import { KafkaValidationPipe } from './validation/kafka-validation.pipe';
 import { ValidationPipe } from './validation/validation.pipe';
 import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from './filters';
+import { CaslModule } from './casl/casl.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from '
       }),
       inject: [ConfigService],
     }),
+    CaslModule,
   ],
   providers: [
     // Provide validation pipes
@@ -42,6 +44,8 @@ import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from '
     HttpExceptionFilter,
     AllExceptionsFilter,
     KafkaExceptionFilter,
+
+    CaslModule,
   ],
 })
 export class CommonModule {}
