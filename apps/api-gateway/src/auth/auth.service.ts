@@ -1,47 +1,39 @@
 // apps/api-gateway/src/auth/auth.service.ts
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { CreateUserDto, KafkaProducerService } from '@app/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { KafkaProducerService } from '@app/common';
+import { CreateUserDto } from '@app/common';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly kafkaProducer: KafkaProducerService,
-    @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka, // Inject ClientKafka
+    private readonly kafkaProducer: KafkaProducerService
   ) {}
-
-  async onModuleInit() {
-    // Subscribe vào các topic phản hồi
-    this.kafkaClient.subscribeToResponseOf('ms.auth.register');
-    this.kafkaClient.subscribeToResponseOf('ms.auth.login');
-    this.kafkaClient.subscribeToResponseOf('ms.auth.refresh');
-    this.kafkaClient.subscribeToResponseOf('ms.auth.validate');
-    this.kafkaClient.subscribeToResponseOf('ms.auth.logout');
-    this.kafkaClient.subscribeToResponseOf('ms.user.findById');
-    await this.kafkaClient.connect(); // Kết nối Kafka sau khi subscribe
-    this.logger.log('Kafka client subscribed to response topics and connected');
-  }
 
   async login(username: string, password: string, userAgent?: string, ipAddress?: string) {
     this.logger.log(`Login attempt for user: ${username}`);
     
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
-      'ms.auth.login',
-      {
-        username,
-        password,
-        userAgent,
-        ipAddress,
-      },
-    );
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.auth.login',
+        {
+          username,
+          password,
+          userAgent,
+          ipAddress,
+        },
+      );
 
-    if (response.status === 'error') {
-      throw new UnauthorizedException(response.error.message);
+      if (response.status === 'error') {
+        throw new UnauthorizedException(response.error.message);
+      }
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Login failed: ${error.message}`, error.stack);
+      throw new UnauthorizedException('Invalid username or password');
     }
-
-    return response.data;
   }
 
   async register(userData: CreateUserDto, userAgent?: string, ipAddress?: string) {
@@ -64,7 +56,7 @@ export class AuthService {
         }
       );
   
-      this.logger.log('Received registration response:', JSON.stringify(response));
+      this.logger.log('Received registration response');
     
       if (response.status === 'error') {
         this.logger.error(`Registration failed: ${response.error.message}`);
@@ -81,57 +73,84 @@ export class AuthService {
   async refreshToken(refreshToken: string, userAgent?: string, ipAddress?: string) {
     this.logger.log('Token refresh request');
     
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
-      'ms.auth.refresh',
-      {
-        refreshToken,
-        userAgent,
-        ipAddress,
-      },
-    );
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.auth.refresh',
+        {
+          refreshToken,
+          userAgent,
+          ipAddress,
+        },
+      );
 
-    if (response.status === 'error') {
-      throw new UnauthorizedException(response.error.message);
+      if (response.status === 'error') {
+        throw new UnauthorizedException(response.error.message);
+      }
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Token refresh failed: ${error.message}`, error.stack);
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
-
-    return response.data;
   }
 
   async validateToken(token: string) {
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
-      'ms.auth.validate',
-      { token },
-    );
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.auth.validate',
+        { token },
+      );
 
-    return response;
+      return response;
+    } catch (error) {
+      this.logger.error(`Token validation failed: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'Token is invalid or expired',
+        },
+      };
+    }
   }
 
   async logout(userId: string) {
     this.logger.log(`Logout request for user: ${userId}`);
     
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
-      'ms.auth.logout',
-      { userId },
-    );
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.auth.logout',
+        { userId },
+      );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Logout failed: ${error.message}`, error.stack);
+      throw new Error('Failed to logout');
+    }
   }
 
   async getProfile(userId: string) {
     this.logger.log(`Get profile for user: ${userId}`);
     
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
-      'ms.user.findById',
-      { userId },
-    );
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.user.findById',
+        { userId },
+      );
 
-    if (response.status === 'error') {
-      throw new UnauthorizedException('User not found');
+      if (response.status === 'error') {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Remove sensitive information
+      const user = response.data;
+      const { password, ...userProfile } = user;
+      
+      return userProfile;
+    } catch (error) {
+      this.logger.error(`Get profile failed: ${error.message}`, error.stack);
+      throw new Error('Failed to get user profile');
     }
-
-    // Remove sensitive information
-    const { password, ...userProfile } = response.data;
-    
-    return userProfile;
   }
 }

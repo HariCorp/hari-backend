@@ -25,7 +25,10 @@ async function bootstrap() {
   }));
 
   // Setup CORS
-  app.enableCors();
+  app.enableCors({
+    origin: `*`,
+    credentials: true, // Quan trọng cho việc gửi cookies
+  });
   
   // Setup global filters and pipes for HTTP
   setupHttpApp(app);

@@ -17,16 +17,17 @@ import { AuthModule } from './auth/auth.module';
     }),
     ClientsModule.registerAsync([
       {
+        name: 'KAFKA_CLIENT',
         imports: [ConfigModule],
-        name: 'KAFKA_SERVICE',
         useFactory: (configService: ConfigService) => ({
           transport: Transport.KAFKA,
           options: {
             client: {
+              clientId: configService.get('SERVICE_NAME', 'api-gateway-client'),
               brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
             },
             consumer: {
-              groupId: configService.get<string>('KAFKA_GROUP_ID', 'gateway-consumer-group'),
+              groupId: configService.get<string>('KAFKA_GROUP_ID', 'api-gateway-consumer-group'),
             },
           },
         }),

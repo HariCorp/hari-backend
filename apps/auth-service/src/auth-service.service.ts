@@ -1,5 +1,5 @@
 // apps/auth-service/src/auth-service.service.ts
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -23,13 +23,13 @@ export class AuthServiceService {
   /**
    * Authenticate a user and generate tokens
    */
-  async login(username: string, password: string, userAgent?: string, ipAddress?: string) {
+  async login(email: string, password: string, userAgent?: string, ipAddress?: string) {
     try {
       // Verify user credentials with User Service
       const verifyResult = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.user.verifyCredentials',
         {
-          username,
+          email,
           password,
         },
       );
@@ -72,15 +72,15 @@ export class AuthServiceService {
         status: 'error',
         error: {
           code: 'AUTHENTICATION_FAILED',
-          message: 'Invalid username or password',
+          message: 'Invalid email or password',
         },
       };
     }
   }
 
   /**
- * Register a new user and generate tokens
- */
+   * Register a new user and generate tokens
+   */
   async register(userData: CreateUserDto, userAgent?: string, ipAddress?: string) {
     try {
       // Create user in UserService

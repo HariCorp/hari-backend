@@ -247,11 +247,15 @@ export class UserServiceService {
     }
   }
 
-  // Thay đổi phương thức authenticate
-  async verifyUserCredentials(username: string, password: string): Promise<{ isValid: boolean; user?: User }> {
+  // Trong UserServiceService
+  async verifyUserCredentials(email: string, password: string): Promise<{ isValid: boolean; user?: User }> {
     try {
-      // Tìm user với username và lấy cả password
-      const user = await this.findByUsername(username, true);
+      // Tìm user với email và lấy cả password
+      const user = await this.userModel.findOne({ email }).select('+password').exec();
+      
+      if (!user) {
+        return { isValid: false };
+      }
       
       // Kiểm tra password
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -261,10 +265,10 @@ export class UserServiceService {
       }
       
       // Nếu hợp lệ, trả về user (không bao gồm password)
-      const { password: _, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = user.toObject();
       return { 
         isValid: true, 
-        user: userWithoutPassword as User
+        user: userWithoutPassword as any,
       };
     } catch (error) {
       this.logger.error(`Credentials verification failed: ${error.message}`);

@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CommonModule } from '@app/common';
 
 import { AuthServiceService } from './auth-service.service';
@@ -16,6 +17,27 @@ import { JwtModule } from '@nestjs/jwt';
       envFilePath: ['apps/auth-service/.env'],
       isGlobal: true,
     }),
+    
+    // Đăng ký Kafka client
+    ClientsModule.registerAsync([
+      {
+        name: 'KAFKA_CLIENT',
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.KAFKA,
+          options: {
+            client: {
+              clientId: configService.get('SERVICE_NAME', 'auth-service-client'),
+              brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
+            },
+            consumer: {
+              groupId: configService.get<string>('KAFKA_GROUP_ID', 'auth-service-group-client'),
+            },
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
     
     // Kết nối MongoDB
     MongooseModule.forRootAsync({

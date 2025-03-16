@@ -1,6 +1,6 @@
 // apps/api-gateway/src/auth/auth.controller.ts
-import { Body, Controller, Post, Req, Res, HttpStatus, Get, UseGuards, Delete } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Body, Controller, Post, Req, Get, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from '@app/common/dto/auth/login.dto';
 import { RefreshTokenDto } from '@app/common/dto/auth/refresh-token.dto';

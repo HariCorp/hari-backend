@@ -154,10 +154,10 @@ export class UserServiceController {
 
   @MessagePattern('ms.user.verifyCredentials')
   @KafkaMessageHandler({ topic: 'ms.user.verifyCredentials' })
-  async verifyUserCredentials(data: { username: string; password: string }) {
-    this.logger.log(`Received credential verification request for username: ${data.username}`);
+  async verifyUserCredentials(data: { email: string; password: string }) {
+    this.logger.log(`Received credential verification request for email: ${data.email}`);
     try {
-      const result = await this.userService.verifyUserCredentials(data.username, data.password);
+      const result = await this.userService.verifyUserCredentials(data.email, data.password);
       
       if (!result.isValid) {
         return {
@@ -173,15 +173,7 @@ export class UserServiceController {
         status: 'success',
         data: {
           isValid: true,
-          user: result.user ? {
-            _id: result.user._id,
-            username: result.user.username,
-            email: result.user.email,
-            roles: result.user.roles,
-            status: result.user.status,
-            isVerified: result.user.isVerified
-            // Các thông tin cần thiết khác, KHÔNG bao gồm mật khẩu
-          } : undefined
+          user: result.user
         }
       };
     } catch (error) {
