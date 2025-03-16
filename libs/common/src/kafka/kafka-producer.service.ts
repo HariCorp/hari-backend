@@ -7,6 +7,22 @@ import { timeout } from 'rxjs/operators';
 
 @Injectable()
 export class KafkaProducerService implements OnModuleInit {
+  private readonly responseTopics = [
+    'ms.auth.register',
+    'ms.auth.login',
+    'ms.auth.refresh',
+    'ms.auth.validate',
+    'ms.auth.logout',
+    'ms.user.findById',
+    'ms.user.create',
+    'ms.user.verifyCredentials',
+  ];
+  
+  async onModuleInit() {
+    this.responseTopics.forEach(topic => this.kafkaClient.subscribeToResponseOf(topic));
+    await this.kafkaClient.connect();
+    this.logger.log('Kafka producer subscribed to response topics and connected');
+  }
   private readonly logger = new Logger(KafkaProducerService.name);
   private readonly defaultRequestTimeout = 10000; // 10 seconds
   private readonly maxRetries = 3;
@@ -16,11 +32,6 @@ export class KafkaProducerService implements OnModuleInit {
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     private readonly serializer: KafkaSerializer,
   ) {}
-
-  async onModuleInit() {
-    await this.kafkaClient.connect();
-    this.logger.log('Kafka producer connected');
-  }
 
   /**
    * Send a message to a Kafka topic

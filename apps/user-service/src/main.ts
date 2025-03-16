@@ -30,7 +30,10 @@ async function bootstrap() {
   
   await app.startAllMicroservices();
   
-  logger.log('User Service Kafka microservice đang chạy');
+  // Log that the service is running
+  logger.log(`User Service Kafka microservice is running`);
+  logger.log(`Kafka Brokers: ${configService.get<string>('KAFKA_BROKERS', 'localhost:9092')}`);
+  logger.log(`Group ID: ${configService.get<string>('KAFKA_GROUP_ID', 'user-service-group')}`);
 }
 
 bootstrap();

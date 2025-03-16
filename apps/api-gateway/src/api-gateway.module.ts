@@ -5,6 +5,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ApiGatewayController } from './api-gateway.controller';
 import { CommonModule } from '@app/common';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UserModule } from './user/user.module';
       },
     ]),
     UserModule,
+    AuthModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
