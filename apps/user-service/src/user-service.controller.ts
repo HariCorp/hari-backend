@@ -152,23 +152,79 @@ export class UserServiceController {
     }
   }
 
-  @MessagePattern('ms.user.authenticate')
-  @KafkaMessageHandler({ topic: 'ms.user.authenticate' })
-  async authenticateUser(data: { username: string; password: string }) {
-    this.logger.log(`Received authenticate user request for username: ${data.username}`);
+  @MessagePattern('ms.user.verifyCredentials')
+  @KafkaMessageHandler({ topic: 'ms.user.verifyCredentials' })
+  async verifyUserCredentials(data: { username: string; password: string }) {
+    this.logger.log(`Received credential verification request for username: ${data.username}`);
     try {
-      const user = await this.userService.authenticate(data.username, data.password);
+      const result = await this.userService.verifyUserCredentials(data.username, data.password);
+      
+      if (!result.isValid) {
+        return {
+          status: 'error',
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid credentials'
+          }
+        };
+      }
+      
+      return {
+        status: 'success',
+        data: {
+          isValid: true,
+          user: result.user ? {
+            _id: result.user._id,
+            username: result.user.username,
+            email: result.user.email,
+            roles: result.user.roles,
+            status: result.user.status,
+            isVerified: result.user.isVerified
+            // Các thông tin cần thiết khác, KHÔNG bao gồm mật khẩu
+          } : undefined
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Verification failed: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: 'VERIFICATION_ERROR',
+          message: 'Invalid credentials'
+        }
+      };
+    }
+  }
+
+  @MessagePattern('ms.user.findUserWithAuth')
+  @KafkaMessageHandler({ topic: 'ms.user.findUserWithAuth' })
+  async findUserWithAuth(data: { username: string; requestSource: string }) {
+    // Xác minh yêu cầu đến từ auth-service
+    if (data.requestSource !== 'auth-service') {
+      this.logger.warn(`Unauthorized attempt to access sensitive user data from: ${data.requestSource}`);
+      return {
+        status: 'error',
+        error: {
+          code: 'UNAUTHORIZED_ACCESS',
+          message: 'Only auth-service can access this endpoint'
+        }
+      };
+    }
+    
+    this.logger.log(`Retrieving user with auth data for: ${data.username}`);
+    try {
+      const user = await this.userService.findUserWithPassword(data.username);
       return {
         status: 'success',
         data: user
       };
     } catch (error) {
-      this.logger.error(`Authentication failed: ${error.message}`);
+      this.logger.error(`Failed to find user: ${error.message}`);
       return {
         status: 'error',
         error: {
-          code: 'AUTHENTICATION_ERROR',
-          message: 'Invalid credentials'
+          code: error.name || 'FIND_USER_ERROR',
+          message: error.message
         }
       };
     }

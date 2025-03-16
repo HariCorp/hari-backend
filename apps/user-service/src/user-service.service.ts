@@ -247,7 +247,8 @@ export class UserServiceService {
     }
   }
 
-  async authenticate(username: string, password: string): Promise<User> {
+  // Thay đổi phương thức authenticate
+  async verifyUserCredentials(username: string, password: string): Promise<{ isValid: boolean; user?: User }> {
     try {
       // Tìm user với username và lấy cả password
       const user = await this.findByUsername(username, true);
@@ -256,13 +257,29 @@ export class UserServiceService {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       
       if (!isPasswordValid) {
-        throw new NotFoundException('Invalid credentials');
+        return { isValid: false };
       }
       
-      return user;
+      // Nếu hợp lệ, trả về user (không bao gồm password)
+      const { password: _, ...userWithoutPassword } = user;
+      return { 
+        isValid: true, 
+        user: userWithoutPassword as User
+      };
     } catch (error) {
-      this.logger.error(`Authentication failed: ${error.message}`);
-      throw new NotFoundException('Invalid credentials');
+      this.logger.error(`Credentials verification failed: ${error.message}`);
+      return { isValid: false };
     }
+  }
+
+  // Thêm phương thức mới để trả về user kèm thông tin xác thực (chỉ dành cho auth-service)
+  async findUserWithPassword(username: string): Promise<User> {
+    const user = await this.userModel.findOne({ username }).select('+password').exec();
+    
+    if (!user) {
+      throw new NotFoundException(`User with username ${username} not found`);
+    }
+    
+    return user;
   }
 }
