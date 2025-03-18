@@ -6,10 +6,13 @@ import { ConfigService } from '@nestjs/config';
 import { setupHttpApp, setupMicroserviceApp } from '@app/common/bootstrap';
 import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
 import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   // Tạo ứng dụng HTTP thông thường
   const app = await NestFactory.create(ApiGatewayModule);
+
+  app.use(cookieParser());
 
   // Thêm prefix cho API
   app.setGlobalPrefix('api');

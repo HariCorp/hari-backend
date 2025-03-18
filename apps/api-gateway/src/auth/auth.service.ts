@@ -2,13 +2,18 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { KafkaProducerService } from '@app/common';
 import { CreateUserDto } from '@app/common';
+import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly kafkaProducer: KafkaProducerService
+    private readonly kafkaProducer: KafkaProducerService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async login(username: string, password: string, userAgent?: string, ipAddress?: string) {
@@ -152,5 +157,28 @@ export class AuthService {
       this.logger.error(`Get profile failed: ${error.message}`, error.stack);
       throw new Error('Failed to get user profile');
     }
+  }
+
+  setCookieWithRefreshToken(refreshToken: string, res: Response): void {
+    const refreshTokenCookieOptions = {
+      httpOnly: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: 'strict' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+      path: '/api/auth/refresh',
+    };
+
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+  }
+
+  // Phương thức xóa cookie refresh token
+  clearRefreshTokenCookie(res: Response): void {
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: 'strict' as const,
+      expires: new Date(0),
+      path: '/api/auth/refresh',
+    });
   }
 }
