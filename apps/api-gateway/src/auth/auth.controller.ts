@@ -1,11 +1,12 @@
 // apps/api-gateway/src/auth/auth.controller.ts
-import { Body, Controller, Post, Req, Res, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, Get, UseGuards, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from '@app/common/dto/auth/login.dto';
 import { CreateUserDto } from '@app/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
+import { STATUS_CODES } from 'http';
 
 @Controller('auth')
 export class AuthController {
@@ -32,7 +33,11 @@ export class AuthController {
       return { status: 'success', data: responseData };
     }
 
-    return result;
+    return {
+      _data: result,
+      _message: "Dang nhap thanh cong!",
+      _statusCode: HttpStatus.OK
+    };
   }
 
   @Post('register')
@@ -55,7 +60,11 @@ export class AuthController {
       return { status: 'success', data: responseData };
     }
 
-    return result;
+    return {
+      _data: result,
+      _message: "Dang ky thanh cong!",
+      _statusCode: HttpStatus.CREATED
+    };
   }
 
   @UseGuards(JwtRefreshAuthGuard)
@@ -77,7 +86,11 @@ export class AuthController {
       return { status: 'success', data: responseData };
     }
 
-    return result;
+    return {
+      _data: result,
+      _message: "Refresh thanh cong!",
+      _statusCode: HttpStatus.OK
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -92,9 +105,8 @@ export class AuthController {
     const result = await this.authService.logout(userId);
 
     return {
-      status: 'success',
-      message: 'Đăng xuất thành công',
-      data: result,
+      _message: 'Đăng xuất thành công',
+      _data: result,
     };
   }
 }
