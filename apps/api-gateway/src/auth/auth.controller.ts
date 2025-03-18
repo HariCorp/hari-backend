@@ -23,16 +23,8 @@ export class AuthController {
     const ipAddress = req.ip;
 
     const result = await this.authService.login(email, password, userAgent, ipAddress);
-
-    if (result.status === 'success' && result.data) {
       // Sử dụng phương thức mới để set cookie
-      this.authService.setCookieWithRefreshToken(result.data.refreshToken, res);
-
-      // Không trả về refresh token trong response
-      const { refreshToken, ...responseData } = result.data;
-      return { status: 'success', data: responseData };
-    }
-
+      this.authService.setCookieWithRefreshToken(result.refreshToken, res);
     return {
       _data: result,
       _message: "Dang nhap thanh cong!",

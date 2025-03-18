@@ -1,5 +1,5 @@
 // apps/auth-service/src/auth-service.service.ts
-import { Inject, Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -7,7 +7,6 @@ import { ConfigService } from '@nestjs/config';
 import { CreateUserDto, KafkaProducerService } from '@app/common';
 import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
 import * as bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthServiceService {
@@ -93,8 +92,8 @@ export class AuthServiceService {
             correlationId: `auth-${Date.now()}`,
             timestamp: Date.now(),
             source: 'auth-service',
-            type: 'command'
-          }
+            type: 'command',
+          },
         },
       );
 
@@ -153,21 +152,39 @@ export class AuthServiceService {
    */
   async refreshToken(refreshTokenString: string, userAgent?: string, ipAddress?: string) {
     try {
-      // Find the refresh token
-      const refreshTokenDoc = await this.refreshTokenModel.findOne({
-        token: await this.hashToken(refreshTokenString),
+      // Xác minh refreshToken là JWT hợp lệ
+      const payload = this.jwtService.verify(refreshTokenString, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+      console.log('Payload:', payload);
+
+      // Tìm tất cả token của user chưa bị thu hồi và còn hiệu lực
+      const refreshTokens = await this.refreshTokenModel.find({
+        userId: payload.sub,
         isRevoked: false,
         expiresAt: { $gt: new Date() },
       });
+      console.log('Refresh tokens in DB:', refreshTokens);
 
-      if (!refreshTokenDoc) {
+      // So sánh refreshTokenString với từng token trong database
+      let validTokenDoc: RefreshTokenDocument | null = null;
+      for (const tokenDoc of refreshTokens) {
+        const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
+        console.log('Token match:', isMatch, 'for token:', tokenDoc.token);
+        if (isMatch) {
+          validTokenDoc = tokenDoc;
+          break;
+        }
+      }
+
+      if (!validTokenDoc) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
 
       // Get user details
       const userResponse = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.user.findById',
-        { userId: refreshTokenDoc.userId },
+        { userId: validTokenDoc.userId },
       );
 
       if (userResponse.status === 'error' || !userResponse.data) {
@@ -180,7 +197,7 @@ export class AuthServiceService {
       const tokens = await this.generateTokens(user);
 
       // Revoke old refresh token
-      await this.refreshTokenModel.findByIdAndUpdate(refreshTokenDoc._id, {
+      await this.refreshTokenModel.findByIdAndUpdate(validTokenDoc._id, {
         isRevoked: true,
         lastUsedAt: new Date(),
       });
@@ -338,7 +355,7 @@ export class AuthServiceService {
   }
 
   /**
-   * Generate JWT and refresh tokens
+   * Generate JWT access and refresh tokens
    */
   private async generateTokens(user: { 
     _id: string | any; 
@@ -357,11 +374,15 @@ export class AuthServiceService {
     const refreshTokenExpiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // Default 7 days
 
     const accessToken = this.jwtService.sign(jwtPayload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: accessTokenExpiresIn,
     });
 
-    // Generate a secure random refresh token
-    const refreshToken = uuidv4();
+    // Tạo refreshToken dưới dạng JWT, dùng chung JWT_SECRET
+    const refreshToken = this.jwtService.sign(jwtPayload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: refreshTokenExpiresIn,
+    });
 
     return {
       accessToken,
@@ -400,7 +421,6 @@ export class AuthServiceService {
    * Hash a token for secure storage
    */
   private async hashToken(token: string): Promise<string> {
-    // Using a simple hash is sufficient for tokens since they're already random
     return await bcrypt.hash(token, 10);
   }
 }
