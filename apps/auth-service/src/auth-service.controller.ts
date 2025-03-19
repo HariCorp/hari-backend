@@ -53,9 +53,19 @@ export class AuthServiceController {
 
   @MessagePattern('ms.auth.logout')
   @KafkaMessageHandler({ topic: 'ms.auth.logout' })
-  async logout(data: { userId: string }) {
+  async logout(data: { userId: string; refreshToken: string }) {
     this.logger.log(`Logout request for user: ${data.userId}`);
-    return this.authService.logout(data.userId);
+  
+    const { userId, refreshToken } = data;
+    if (!refreshToken) {
+      this.logger.warn(`Missing refresh token for user ${userId}`);
+      return {
+        status: 'error',
+        error: { code: 'MISSING_TOKEN', message: 'Refresh token not provided' },
+      };
+    }
+  
+    return this.authService.logout(userId, refreshToken);
   }
 
   @MessagePattern('ms.auth.revoke')

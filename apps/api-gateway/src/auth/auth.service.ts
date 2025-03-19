@@ -119,20 +119,46 @@ export class AuthService {
     }
   }
 
-  async logout(userId: string) {
-    this.logger.log(`Logout request for user: ${userId}`);
+  async logout(userId: string, refreshToken: string) {
+    this.logger.log(`Logout request for user: ${userId} with refresh token: ${refreshToken}`);
     
     try {
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.auth.logout',
-        { userId },
+        { userId, refreshToken },
       );
+
+      if (response.status === 'error') {
+        throw new Error(response.error.message || 'Failed to logout');
+      }
 
       return response.data;
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`, error.stack);
       throw new Error('Failed to logout');
     }
+  }
+
+  setCookieWithRefreshToken(refreshToken: string, res: Response): void {
+    const refreshTokenCookieOptions = {
+      httpOnly: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: 'strict' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+      path: '/api/auth/refresh',
+    };
+
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+  }
+
+  clearRefreshTokenCookie(res: Response): void {
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: 'strict' as const,
+      expires: new Date(0),
+      path: '/api/auth/refresh',
+    });
   }
 
   async getProfile(userId: string) {
@@ -157,28 +183,5 @@ export class AuthService {
       this.logger.error(`Get profile failed: ${error.message}`, error.stack);
       throw new Error('Failed to get user profile');
     }
-  }
-
-  setCookieWithRefreshToken(refreshToken: string, res: Response): void {
-    const refreshTokenCookieOptions = {
-      httpOnly: true,
-      secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict' as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
-      path: '/api/auth/refresh',
-    };
-
-    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
-  }
-
-  // Phương thức xóa cookie refresh token
-  clearRefreshTokenCookie(res: Response): void {
-    res.cookie('refreshToken', '', {
-      httpOnly: true,
-      secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict' as const,
-      expires: new Date(0),
-      path: '/api/auth/refresh',
-    });
   }
 }

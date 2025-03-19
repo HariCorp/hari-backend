@@ -328,28 +328,55 @@ export class AuthServiceService {
   /**
    * Logout user by revoking all refresh tokens
    */
-  async logout(userId: string) {
+  async logout(userId: string, refreshTokenString: string) {
     try {
-      const result = await this.refreshTokenModel.updateMany(
-        { userId, isRevoked: false },
-        { isRevoked: true },
-      );
+      this.logger.log(`Logging out user ${userId} with refresh token ${refreshTokenString}`);
 
+      // Xác minh refreshToken
+      const payload = this.jwtService.verify(refreshTokenString, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+
+      if (payload.sub !== userId) {
+        throw new UnauthorizedException('Refresh token does not belong to this user');
+      }
+
+      // Tìm refreshToken trong database
+      const refreshTokens = await this.refreshTokenModel.find({
+        userId,
+        isRevoked: false,
+        expiresAt: { $gt: new Date() },
+      });
+
+      let validTokenDoc: RefreshTokenDocument | null = null;
+      for (const tokenDoc of refreshTokens) {
+        const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
+        if (isMatch) {
+          validTokenDoc = tokenDoc;
+          break;
+        }
+      }
+
+      if (!validTokenDoc) {
+        throw new UnauthorizedException('Refresh token not found or already revoked');
+      }
+
+      // Thu hồi refreshToken
+      await this.refreshTokenModel.findByIdAndUpdate(validTokenDoc._id, {
+        isRevoked: true,
+        lastUsedAt: new Date(),
+      });
+
+      this.logger.log(`Successfully logged out user ${userId} on current device`);
       return {
         status: 'success',
-        data: {
-          message: 'Logged out successfully',
-          tokensRevoked: result.modifiedCount,
-        },
+        data: { message: 'Logged out successfully from this device' },
       };
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`, error.stack);
       return {
         status: 'error',
-        error: {
-          code: 'LOGOUT_FAILED',
-          message: 'Failed to logout',
-        },
+        error: { code: 'LOGOUT_FAILED', message: 'Failed to logout' },
       };
     }
   }

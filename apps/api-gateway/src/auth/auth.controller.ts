@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
 import { STATUS_CODES } from 'http';
+import { CurrentUser } from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -87,18 +88,37 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const userId = req.user.userId;
+  async logout(
+    @CurrentUser('userId') userId: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies.refreshToken;
+    console.log("current user: ", userId)
 
-    // Xóa refresh token cookie
-    this.authService.clearRefreshTokenCookie(res);
+    if (!refreshToken) {
+      return {
+        _message: 'Refresh token không được cung cấp',
+        _statusCode: HttpStatus.BAD_REQUEST,
+        _data: null,
+      };
+    }
 
-    // Thu hồi refresh token từ database
-    const result = await this.authService.logout(userId);
+    const result = await this.authService.logout(userId, refreshToken);
+
+    if (result.message === 'Logged out successfully from this device') {
+      this.authService.clearRefreshTokenCookie(res);
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+    }
 
     return {
       _message: 'Đăng xuất thành công',
       _data: result,
+      _statusCode: HttpStatus.OK,
     };
   }
 }
