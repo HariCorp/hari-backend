@@ -123,16 +123,28 @@ export class AuthService {
     this.logger.log(`Logout request for user: ${userId} with refresh token: ${refreshToken}`);
     
     try {
+      // Send a request to the auth service to revoke the refresh token
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.auth.logout',
-        { userId, refreshToken },
+        { 
+          userId, 
+          refreshToken,
+          metadata: {
+            id: `api-${Date.now()}`,
+            correlationId: `api-${Date.now()}`,
+            timestamp: Date.now(),
+            source: 'api-gateway',
+            type: 'command'
+          }
+        },
       );
-
+  
       if (response.status === 'error') {
-        throw new Error(response.error.message || 'Failed to logout');
+        this.logger.error(`Logout failed: ${response.error?.message}`);
+        throw new Error(response.error?.message || 'Failed to logout');
       }
-
-      return response.data;
+  
+      return response.data || { message: 'Logged out successfully' };
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`, error.stack);
       throw new Error('Failed to logout');

@@ -330,53 +330,78 @@ export class AuthServiceService {
    */
   async logout(userId: string, refreshTokenString: string) {
     try {
-      this.logger.log(`Logging out user ${userId} with refresh token ${refreshTokenString}`);
-
-      // Xác minh refreshToken
-      const payload = this.jwtService.verify(refreshTokenString, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      });
-
-      if (payload.sub !== userId) {
-        throw new UnauthorizedException('Refresh token does not belong to this user');
-      }
-
-      // Tìm refreshToken trong database
+      this.logger.log(`Logging out user ${userId}`);
+      
+      // Tìm tất cả refresh token chưa bị thu hồi của user
       const refreshTokens = await this.refreshTokenModel.find({
         userId,
         isRevoked: false,
         expiresAt: { $gt: new Date() },
       });
-
-      let validTokenDoc: RefreshTokenDocument | null = null;
+      
+      if (refreshTokens.length === 0) {
+        this.logger.warn(`No active refresh tokens found for user ${userId}`);
+        return {
+          status: 'success',
+          data: { 
+            message: 'No active sessions to logout',
+            tokensRevoked: 0
+          },
+        };
+      }
+      
+      // Kiểm tra xem refreshTokenString có khớp với bất kỳ token nào không
+      let foundMatch = false;
+      let revokedCount = 0;
+      
       for (const tokenDoc of refreshTokens) {
-        const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
-        if (isMatch) {
-          validTokenDoc = tokenDoc;
-          break;
+        try {
+          // So sánh refreshTokenString với hash trong database
+          const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
+          
+          if (isMatch) {
+            // Thu hồi token này
+            await this.refreshTokenModel.findByIdAndUpdate(tokenDoc._id, {
+              isRevoked: true,
+              lastUsedAt: new Date(),
+            });
+            foundMatch = true;
+            revokedCount++;
+            this.logger.log(`Revoked refresh token for user ${userId}`);
+          }
+        } catch (bcryptError) {
+          this.logger.error(`Error comparing refresh tokens: ${bcryptError.message}`);
+          // Tiếp tục với token tiếp theo
         }
       }
-
-      if (!validTokenDoc) {
-        throw new UnauthorizedException('Refresh token not found or already revoked');
+      
+      // Nếu không tìm thấy token phù hợp, thu hồi tất cả token của user
+      if (!foundMatch) {
+        this.logger.warn(`No matching refresh token found, revoking all tokens for user ${userId}`);
+        
+        const result = await this.refreshTokenModel.updateMany(
+          { userId, isRevoked: false },
+          { isRevoked: true, lastUsedAt: new Date() }
+        );
+        
+        revokedCount = result.modifiedCount;
       }
-
-      // Thu hồi refreshToken
-      await this.refreshTokenModel.findByIdAndUpdate(validTokenDoc._id, {
-        isRevoked: true,
-        lastUsedAt: new Date(),
-      });
-
-      this.logger.log(`Successfully logged out user ${userId} on current device`);
+      
       return {
         status: 'success',
-        data: { message: 'Logged out successfully from this device' },
+        data: { 
+          message: 'Logged out successfully',
+          tokensRevoked: revokedCount
+        },
       };
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`, error.stack);
       return {
         status: 'error',
-        error: { code: 'LOGOUT_FAILED', message: 'Failed to logout' },
+        error: { 
+          code: 'LOGOUT_FAILED', 
+          message: 'Failed to logout'
+        },
       };
     }
   }
@@ -396,26 +421,39 @@ export class AuthServiceService {
       email: user.email,
       roles: user.roles,
     };
-
-    const accessTokenExpiresIn = this.configService.get<number>('JWT_ACCESS_EXPIRATION', 3600); // Default 1 hour
-    const refreshTokenExpiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // Default 7 days
-
+  
+    // Get values from config service
+    const accessTokenExpiresIn = this.configService.get<string>('JWT_ACCESS_EXPIRATION', '3600');
+    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRATION', '2592000');
+    
+    // Convert to numbers explicitly
+    const accessExpiresInSeconds = parseInt(accessTokenExpiresIn, 10);
+    const refreshExpiresInSeconds = parseInt(refreshTokenExpiresIn, 10);
+    
+    console.log('Token expiration times - Access:', accessExpiresInSeconds, 'Refresh:', refreshExpiresInSeconds);
+  
+    // Use the parsed numeric values for token signing
     const accessToken = this.jwtService.sign(jwtPayload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: accessTokenExpiresIn,
+      expiresIn: accessExpiresInSeconds
     });
-
-    // Tạo refreshToken dưới dạng JWT, dùng chung JWT_SECRET
+  
     const refreshToken = this.jwtService.sign(jwtPayload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: refreshTokenExpiresIn,
+      expiresIn: refreshExpiresInSeconds
     });
-
+  
     return {
       accessToken,
       refreshToken,
-      expiresIn: accessTokenExpiresIn,
-      refreshExpiresIn: refreshTokenExpiresIn,
+      expiresIn: accessExpiresInSeconds,
+      tokenType: 'Bearer',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        roles: user.roles,
+      }
     };
   }
 
@@ -429,8 +467,10 @@ export class AuthServiceService {
     ipAddress?: string,
   ) {
     const refreshExpiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // Default 7 days
+    console.log('thoi gian het han:', refreshExpiresIn)
     const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + refreshExpiresIn);
+    expiresAt.setTime(expiresAt.getTime() + (refreshExpiresIn * 1000));
+    console.log("hethan", expiresAt)
 
     // Hash the token before storing
     const hashedToken = await this.hashToken(token);

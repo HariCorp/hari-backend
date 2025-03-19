@@ -2,18 +2,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
 
-  constructor() {
+  constructor(private configService: ConfigService) {
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
+    }
+    
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'your-secret-key', // Đảm bảo đúng với secret khi tạo token
+      secretOrKey: jwtSecret,
     });
-    this.logger.log('JwtStrategy initialized');
+    
+    this.logger.log('JwtStrategy initialized with secret from environment');
   }
 
   async validate(payload: any) {

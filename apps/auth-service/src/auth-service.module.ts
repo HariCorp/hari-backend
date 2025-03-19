@@ -54,12 +54,19 @@ import { JwtModule } from '@nestjs/jwt';
     
     // Cấu hình JWT
     JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.get<number>('JWT_ACCESS_EXPIRATION')}s`,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        const expiresIn = configService.get<number>('JWT_ACCESS_EXPIRATION', 3600);
+        
+        console.log('Auth Service JWT settings - Secret:', !!secret, 'ExpiresIn:', expiresIn);
+        
+        return {
+          secret: secret,
+          signOptions: {
+            expiresIn: expiresIn,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     

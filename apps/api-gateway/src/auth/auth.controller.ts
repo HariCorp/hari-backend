@@ -1,16 +1,18 @@
 // apps/api-gateway/src/auth/auth.controller.ts
-import { Body, Controller, Post, Req, Res, Get, UseGuards, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, Get, UseGuards, HttpStatus, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from '@app/common/dto/auth/login.dto';
 import { CreateUserDto } from '@app/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
-import { STATUS_CODES } from 'http';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { AppService } from 'src/app.service';
+
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AppService.name);
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
@@ -89,32 +91,38 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
-    @CurrentUser('userId') userId: string,
+    @CurrentUser() user,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    // Get the user ID from the CurrentUser decorator
+    const userId = user.userId;
     const refreshToken = req.cookies.refreshToken;
-    console.log("current user: ", userId)
+    
+    this.logger.log(`Logging out user: ${userId}`);
 
+    if (!userId) {
+      return {
+        _message: 'User not authenticated',
+        _statusCode: HttpStatus.UNAUTHORIZED,
+        _data: null,
+      };
+    }
+    
     if (!refreshToken) {
       return {
-        _message: 'Refresh token không được cung cấp',
+        _message: 'Refresh token not provided',
         _statusCode: HttpStatus.BAD_REQUEST,
         _data: null,
       };
     }
 
+    // Call the logout method from the auth service with both userId and refreshToken
     const result = await this.authService.logout(userId, refreshToken);
 
-    if (result.message === 'Logged out successfully from this device') {
-      this.authService.clearRefreshTokenCookie(res);
-      res.clearCookie('accessToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-      });
-    }
-
+    // Clear the cookies regardless of the result to ensure client-side logout
+    this.authService.clearRefreshTokenCookie(res);
+    
     return {
       _message: 'Đăng xuất thành công',
       _data: result,

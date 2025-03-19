@@ -14,12 +14,23 @@ import { CommonModule } from '@app/common';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', 'your-secret-key'),
-        signOptions: { 
-          expiresIn: configService.get<string>('JWT_EXPIRATION', '1h') 
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        const expiresIn = parseInt(configService.get<string>('JWT_ACCESS_EXPIRATION', '3600'), 10);
+        
+        console.log('API Gateway JWT settings - Secret:', !!secret, 'ExpiresIn:', expiresIn);
+        
+        if (!secret) {
+          console.error('ERROR: JWT_SECRET is not defined in environment variables!');
+        }
+        
+        return {
+          secret: secret,
+          signOptions: {
+            expiresIn: expiresIn // Use the number value
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     CommonModule,

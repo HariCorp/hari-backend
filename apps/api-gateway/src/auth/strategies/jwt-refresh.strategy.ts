@@ -1,13 +1,15 @@
 // apps/api-gateway/src/auth/strategies/jwt-refresh.strategy.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { AuthService } from '../auth.service';
+import { JwtStrategy } from './jwt.strategy';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+  private readonly logger = new Logger(JwtStrategy.name);
   constructor(
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
@@ -20,8 +22,9 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       ]),
       secretOrKey: configService.get<string>('JWT_SECRET'),
       passReqToCallback: true, // Bật để truyền request vào validate
-    } as StrategyOptionsWithRequest); // Ép kiểu rõ ràng để TypeScript hiểu
+    } as StrategyOptionsWithRequest);
   }
+  
 
   async validate(req: Request, payload: any) {
     const refreshToken = req.cookies?.refreshToken;
