@@ -7,7 +7,6 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AppService } from 'src/app.service';
 
 
 @Controller('auth')
