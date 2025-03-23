@@ -11,7 +11,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(AppService.name);
+  private readonly logger = new Logger(AuthController.name);
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')

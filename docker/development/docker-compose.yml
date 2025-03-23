@@ -1,5 +1,6 @@
 services:
   zookeeper:
+    container_name: zookeeper
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -8,6 +9,7 @@ services:
       - "2181:2181"
 
   kafka:
+    container_name: kafka
     image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
@@ -22,6 +24,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   kafdrop:
+    container_name: kafdrop
     image: obsidiandynamics/kafdrop:latest
     depends_on:
       - kafka
@@ -29,3 +32,81 @@ services:
       - "9000:9000"
     environment:
       KAFKA_BROKERCONNECT: kafka:29092
+
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ../..
+      dockerfile: apps/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - JWT_SECRET=haribackend
+      - JWT_ACCESS_EXPIRATION=3600
+      - JWT_REFRESH_EXPIRATION=2592000
+      - KAFKA_CLIENT_ID=api-gateway
+      - KAFKA_BROKERS=kafka:29092  # Chú ý: Sử dụng tên container Kafka
+      - KAFKA_GROUP_ID=api-gateway-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=api-gateway
+      - REQUEST_TIMEOUT=30000
+    depends_on:
+      - kafka
+      - user-service
+      - auth-service
+    volumes:
+      - ../../apps/api-gateway:/usr/src/app/apps/api-gateway
+      - ../../libs:/usr/src/app/libs
+      - /usr/src/app/node_modules
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: ../..
+      dockerfile: apps/auth-service/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb+srv://haivu04112003:hoanghai123@cluster0.zb2dq.mongodb.net/authDB?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=haribackend
+      - JWT_ACCESS_EXPIRATION=3600
+      - JWT_REFRESH_EXPIRATION=2592000
+      - KAFKA_CLIENT_ID=auth-service
+      - KAFKA_BROKERS=kafka:29092  # Chú ý: Sử dụng tên container Kafka
+      - KAFKA_GROUP_ID=auth-service-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=auth-service
+    depends_on:
+      - kafka
+    volumes:
+      - ../../apps/auth-service:/usr/src/app/apps/auth-service
+      - ../../libs:/usr/src/app/libs
+      - /usr/src/app/node_modules
+
+  user-service:
+    container_name: user-service
+    build:
+      context: ../..
+      dockerfile: apps/user-service/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGODB_URI=mongodb+srv://haivu04112003:hoanghai123@cluster0.zb2dq.mongodb.net/userDB?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=haribackend
+      - KAFKA_CLIENT_ID=user-service
+      - KAFKA_BROKERS=kafka:29092  # Chú ý: Sử dụng tên container Kafka 
+      - KAFKA_GROUP_ID=user-service-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=user-service
+    depends_on:
+      - kafka
+    volumes:
+      - ../../apps/user-service:/usr/src/app/apps/user-service
+      - ../../libs:/usr/src/app/libs
+      - /usr/src/app/node_modules

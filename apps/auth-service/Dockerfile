@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
@@ -7,27 +7,12 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
-# Copy source code
-COPY apps/auth-service ./apps/auth-service
-COPY libs ./libs
-
-# Install dependencies and build
+# Install dependencies
 RUN npm install
-RUN npm run build auth-service || true
+RUN npm install -g typescript ts-node
 
-FROM node:18-alpine
+# Expose port
+EXPOSE 3001
 
-WORKDIR /usr/src/app
-
-# Copy files without || true
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/package*.json ./
-
-# Copy source directly
-COPY --from=build /usr/src/app/apps/auth-service/src ./src
-COPY --from=build /usr/src/app/libs ./libs
-
-EXPOSE 3002
-
-# Use ts-node for development
-CMD ["npx", "ts-node", "src/main.ts"]
+# Command to run app
+CMD ["npm", "run", "start:dev", "auth-service"]

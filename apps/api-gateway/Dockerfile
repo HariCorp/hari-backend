@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
@@ -7,27 +7,12 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
-# Copy source code
-COPY apps/api-gateway ./apps/api-gateway
-COPY libs ./libs
-
-# Install dependencies and build
+# Install dependencies
 RUN npm install
-RUN npm run build api-gateway || true
+RUN npm install -g typescript ts-node
 
-FROM node:18-alpine
-
-WORKDIR /usr/src/app
-
-# Copy files without || true
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/package*.json ./
-
-# Copy source directly for development
-COPY --from=build /usr/src/app/apps/api-gateway/src ./src
-COPY --from=build /usr/src/app/libs ./libs
-
+# Expose port
 EXPOSE 3000
 
-# Use ts-node for development
-CMD ["npx", "ts-node", "src/main.ts"]
+# Command to run app
+CMD ["npm", "run", "start:dev", "api-gateway"]
