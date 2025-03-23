@@ -157,7 +157,7 @@ export class AuthService {
       secure: this.configService.get('NODE_ENV') === 'production',
       sameSite: 'strict' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
-      path: '/api/auth/refresh',
+      path: '/api/auth',
     };
 
     res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
