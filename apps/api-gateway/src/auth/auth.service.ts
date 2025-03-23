@@ -169,7 +169,7 @@ export class AuthService {
       secure: this.configService.get('NODE_ENV') === 'production',
       sameSite: 'strict' as const,
       expires: new Date(0),
-      path: '/api/auth/refresh',
+      path: '/api/auth',
     });
   }
 

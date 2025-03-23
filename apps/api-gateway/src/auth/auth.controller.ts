@@ -100,7 +100,7 @@ export class AuthController {
     const refreshToken = req.cookies.refreshToken;
     
     this.logger.log(`Logging out user: ${userId}`);
-
+    
     if (!userId) {
       return {
         _message: 'User not authenticated',

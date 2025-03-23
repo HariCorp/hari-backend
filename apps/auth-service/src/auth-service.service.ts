@@ -38,7 +38,8 @@ export class AuthServiceService {
       }
 
       const user = verifyResult.data.user;
-
+      console.log("🔍 ~ login ~ apps/auth-service/src/auth-service.service.ts:40 ~ user:", user)
+      
       // Generate tokens
       const tokens = await this.generateTokens(user);
 
@@ -58,10 +59,11 @@ export class AuthServiceService {
           expiresIn: tokens.expiresIn,
           tokenType: 'Bearer',
           user: {
-            id: user._id,
+            _id: user._id,
             username: user.username,
             email: user.email,
             roles: user.roles,
+            createdAt: user.createdAt
           },
         },
       };
