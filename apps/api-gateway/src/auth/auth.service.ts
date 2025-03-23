@@ -87,12 +87,13 @@ export class AuthService {
           ipAddress,
         },
       );
-
+      console.log("🔍 ~ refreshToken ~ apps/api-gateway/src/auth/auth.service.ts:82 ~ response:", response)
+      
       if (response.status === 'error') {
         throw new UnauthorizedException(response.error.message);
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       this.logger.error(`Token refresh failed: ${error.message}`, error.stack);
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -155,21 +156,21 @@ export class AuthService {
     const refreshTokenCookieOptions = {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict' as const,
+      sameSite: 'lax' as const, // Thay đổi từ 'strict' sang 'lax'
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
-      path: '/api/auth',
+      path: '/api/auth', // Đảm bảo cookie được gửi đến tất cả endpoint trong /api/auth
     };
-
+  
     res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
   }
-
+  
   clearRefreshTokenCookie(res: Response): void {
     res.cookie('refreshToken', '', {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict' as const,
+      sameSite: 'lax' as const,
       expires: new Date(0),
-      path: '/api/auth',
+      path: '/api/auth', // Đảm bảo cookie được xóa khỏi tất cả endpoint trong /api/auth
     });
   }
 

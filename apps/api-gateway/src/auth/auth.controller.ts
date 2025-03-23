@@ -62,29 +62,52 @@ export class AuthController {
     };
   }
 
-  @UseGuards(JwtRefreshAuthGuard)
   @Post('refresh')
-  async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const userId = req.user.userId;
-    const refreshToken = req.cookies.refreshToken;
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refreshToken;
+    
+    if (!refreshToken) {
+      return {
+        _data: null,
+        _message: "Refresh token không tồn tại",
+        _statusCode: HttpStatus.UNAUTHORIZED
+      };
+    }
+    
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip;
 
-    const result = await this.authService.refreshToken(refreshToken, userAgent, ipAddress);
-
-    if (result.status === 'success' && result.data) {
-      // Sử dụng phương thức mới để set cookie với token mới
-      this.authService.setCookieWithRefreshToken(result.data.refreshToken, res);
-
-      // Không trả về refresh token trong response
-      const { refreshToken, ...responseData } = result.data;
-      return { status: 'success', data: responseData };
-    }
-
-    return {
-      _data: result,
-      _message: "Refresh thanh cong!",
-      _statusCode: HttpStatus.OK
+    try {
+      const result = await this.authService.refreshToken(refreshToken, userAgent, ipAddress);
+      console.log("🔍 ~ refresh ~ apps/api-gateway/src/auth/auth.controller.ts:81 ~ result:", result)
+      
+      if (result.status === 'success' && result.data) {
+        // Đặt cookie mới
+        this.authService.setCookieWithRefreshToken(result.data.refreshToken, res);
+        
+        // Không trả về refresh token trong response
+        const { refreshToken: newRefreshToken, ...responseData } = result.data;
+        
+        return {
+          _data: responseData,
+          _message: "Làm mới token thành công",
+          _statusCode: HttpStatus.OK
+        };
+      }
+      
+      return {
+        _data: null,
+        _message: result.error?.message || "Không thể làm mới token",
+        _statusCode: HttpStatus.UNAUTHORIZED
+      };
+    } catch (error) {
+      this.logger.error(`Token refresh failed: ${error.message}`);
+      
+      return {
+        _data: null,
+        _message: "Không thể làm mới token",
+        _statusCode: HttpStatus.UNAUTHORIZED
+      };
     }
   }
 
@@ -100,7 +123,7 @@ export class AuthController {
     const refreshToken = req.cookies.refreshToken;
     
     this.logger.log(`Logging out user: ${userId}`);
-    
+
     if (!userId) {
       return {
         _message: 'User not authenticated',
