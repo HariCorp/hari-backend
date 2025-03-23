@@ -27,10 +27,13 @@ async function bootstrap() {
     transformOptions: { enableImplicitConversion: true },
   }));
 
-  // Setup CORS
+  // Setup CORS - Allow requests from frontend
   app.enableCors({
-    origin: `*`,
-    credentials: true, // Quan trọng cho việc gửi cookies
+    origin: ['http://localhost:4000', 'http://localhost:3001'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true, // Important for cookies/auth
+    allowedHeaders: 'Content-Type,Authorization,Accept',
+    exposedHeaders: 'Content-Range,X-Content-Range'
   });
   
   // Setup global filters and pipes for HTTP
