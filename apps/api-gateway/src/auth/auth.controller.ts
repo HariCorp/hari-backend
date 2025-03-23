@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { Public } from './decorators/public.decorator';
 
 
 @Controller('auth')
@@ -127,5 +128,43 @@ export class AuthController {
       _data: result,
       _statusCode: HttpStatus.OK,
     };
+  }
+
+  @Get('validate')
+  @Public() // Since this endpoint is for validating the token itself
+  async validateToken(@Req() req: Request) {
+    try {
+      // Extract token from the authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return {
+          status: 'error',
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'Authorization header missing or invalid format'
+          }
+        };
+      }
+      
+      const token = authHeader.split(' ')[1];
+      
+      // Validate token using the existing service method
+      const result = await this.authService.validateToken(token);
+      
+      return {
+        _data: result,
+        _message: result.status === 'success' ? 'Token is valid' : 'Token is invalid',
+        _statusCode: result.status === 'success' ? HttpStatus.OK : HttpStatus.UNAUTHORIZED
+      };
+    } catch (error) {
+      this.logger.error(`Token validation failed: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'Failed to validate token',
+        }
+      };
+    }
   }
 }
