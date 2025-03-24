@@ -6,6 +6,7 @@ import { ApiGatewayController } from './api-gateway.controller';
 import { CommonModule } from '@app/common';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuthModule } from './auth/auth.module';
     ]),
     UserModule,
     AuthModule,
+    ProductModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
