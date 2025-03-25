@@ -1,11 +1,22 @@
+import { CreateProductDto, KafkaProducerService, UpdateProductDto } from '@app/common';
 import { Injectable } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  constructor(
+    private readonly kafkaProducer: KafkaProducerService,
+  ) {}
+  async create(createProductDto: CreateProductDto, user) {
+    createProductDto.userId = user._id;
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.product.create',
+        createProductDto,
+      )
+      console.log("🔍 ~ create ~ hari-backend/apps/api-gateway/src/product/product.service.ts:11 ~ response:", response)
+    } catch (error) {
+      throw new Error('Create product failed:', error)
+    }
   }
 
   findAll() {
