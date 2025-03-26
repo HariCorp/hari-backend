@@ -1,5 +1,7 @@
-// apps/user-service/src/schemas/enums/user-role.enum.ts
+// libs/common/src/enums/user-role.enum.ts
 export enum UserRole {
-    USER = 'user',
-    ADMIN = 'admin',
-  }
+  USER = 'user',
+  SELLER = 'seller',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin'
+}
