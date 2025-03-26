@@ -1,4 +1,4 @@
-import { CreateProductDto, KafkaProducerService } from '@app/common';
+import { CreateProductDto, KafkaProducerService, MongoErrorCode } from '@app/common';
 import { ProductCreatedEvent } from '@app/common/dto/product/product-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
 import { Injectable } from '@nestjs/common';
@@ -24,7 +24,7 @@ export class ProductServiceService {
       
       return product;
     } catch (error) {
-      if (error.code === 11000) {
+      if (error.code === MongoErrorCode.DuplicateKey) {
         if (error.keyPattern && error.keyPattern.sku) {
           throw new DuplicateKeyException('sku', error.keyValue.sku);
         } else {
