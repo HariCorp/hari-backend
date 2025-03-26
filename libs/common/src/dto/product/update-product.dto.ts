@@ -53,7 +53,7 @@ export class UpdateProductDto {
 
   @IsMongoId()
   @IsOptional()
-  seller?: Types.ObjectId | string;
+  userId?: Types.ObjectId | string;
 
   @IsDate()
   @IsOptional()

@@ -51,7 +51,7 @@ export class ProductResponseDto {
 
   @Expose()
   @Type(() => SellerDto)
-  seller: SellerDto;
+  userId: SellerDto;
 
   @Expose()
   closingTime?: Date;

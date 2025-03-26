@@ -1,4 +1,4 @@
-// libs/common/src/dto/product/create-product.dto.ts
+import { Command } from '@app/common/kafka';
 import { Type } from 'class-transformer';
 import { 
   IsString, 
@@ -10,19 +10,22 @@ import {
   IsMongoId,
   Min,
   Max,
-  ValidateNested,
   IsNotEmpty,
-  ArrayMinSize
+  Length,
+  Matches,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Types } from 'mongoose';
 
 export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
+  @Length(2, 100, { message: 'Tên sản phẩm phải từ 2 đến 100 ký tự' })
   name: string;
 
   @IsString()
   @IsOptional()
+  @Length(0, 500, { message: 'Mô tả không được vượt quá 500 ký tự' })
   description?: string;
 
   @IsNumber()
@@ -48,15 +51,16 @@ export class CreateProductDto {
 
   @IsString()
   @IsOptional()
+  @Matches(/^[A-Za-z0-9-]+$/, { message: 'SKU chỉ chứa chữ cái, số và dấu gạch ngang' })
   sku?: string;
 
-  @IsMongoId()
+  @IsMongoId({ message: 'Category phải là MongoDB ObjectId hợp lệ' })
   @IsNotEmpty()
-  category: Types.ObjectId | string;
+  category: Types.ObjectId;
 
-  @IsMongoId()
+  @IsMongoId({ message: 'UserId phải là MongoDB ObjectId hợp lệ' })
   @IsOptional()
-  userId?: Types.ObjectId | string;
+  userId?: Types.ObjectId;
 
   @IsDate()
   @IsOptional()
@@ -64,11 +68,31 @@ export class CreateProductDto {
   closingTime?: Date;
 
   @IsArray()
-  @IsString({ each: true })
+  @IsString({ each: true, message: 'Mỗi URL ảnh phải là chuỗi' })
+  @ArrayMaxSize(5, { message: 'Không được upload quá 5 ảnh' })
+  @Matches(/^https?:\/\/.+$/, { each: true, message: 'Ảnh phải là URL hợp lệ' })
   @IsOptional()
   images?: string[] = [];
 
   @IsBoolean()
   @IsOptional()
   isActive?: boolean = true;
+
+  @IsString()
+  @IsOptional()
+  brand?: string; // Thêm thương hiệu sản phẩm
+
+  @IsArray()
+  @IsOptional()
+  @Type(() => String)
+  tags?: string[] = []; // Thêm danh sách tag cho SEO hoặc tìm kiếm
+}
+
+export class CreateProductCommand extends Command {
+  constructor(
+    public readonly data: CreateProductDto,
+    metadata?: any
+  ) {
+    super(metadata);
+  }
 }

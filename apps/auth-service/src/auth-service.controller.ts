@@ -12,9 +12,9 @@ export class AuthServiceController {
   constructor(private readonly authService: AuthServiceService) {}
 
   @MessagePattern('ms.auth.login')
-  @KafkaMessageHandler({ topic: 'ms.auth.login' })
+  // @KafkaMessageHandler({ topic: 'ms.auth.login' })
   async login(data: { username: string; password: string; userAgent?: string; ipAddress?: string }) {
-    this.logger.log(`Login attempt for user: ${data.username}`);
+    this.logger.log(`Login attempt 111 for user: ${data.username}`);
     return this.authService.login(
       data.username,
       data.password,

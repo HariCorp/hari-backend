@@ -29,10 +29,10 @@ export class CreateUserDto {
 
 // Example of a Command using this DTO
 export class CreateUserCommand extends Command {
-    constructor(
-      public readonly data: CreateUserDto,
-      metadata?: any
-    ) {
-      super(metadata);
-    }
+  constructor(
+    public readonly data: CreateUserDto,
+    metadata?: any
+  ) {
+    super(metadata);
   }
+}

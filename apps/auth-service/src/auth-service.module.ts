@@ -15,7 +15,8 @@ import { JwtModule } from '@nestjs/jwt';
     // Cấu hình môi trường
     ConfigModule.forRoot({
       envFilePath: ['apps/auth-service/.env'],
-      isGlobal: true,
+      isGlobal: false,
+      ignoreEnvFile: false,
     }),
     
     // Đăng ký Kafka client

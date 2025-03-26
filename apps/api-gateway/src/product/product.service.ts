@@ -7,13 +7,25 @@ export class ProductService {
     private readonly kafkaProducer: KafkaProducerService,
   ) {}
   async create(createProductDto: CreateProductDto, user) {
-    createProductDto.userId = user._id;
+    createProductDto.userId = user.userId;
+    const command = {
+      data: createProductDto,
+      metadata: {
+        id: `api-${Date.now()}`,
+        correlationId: `api-${Date.now()}`,
+        timestamp: Date.now(),
+        source: 'api-gateway',
+        type: 'command'
+      }
+    }
+    console.log("🔍 ~ create ~ hari-backend/apps/api-gateway/src/product/product.service.ts:11 ~ command:", command)
     try {
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.create',
-        createProductDto,
+        command,
       )
       console.log("🔍 ~ create ~ hari-backend/apps/api-gateway/src/product/product.service.ts:11 ~ response:", response)
+      return response;
     } catch (error) {
       throw new Error('Create product failed:', error)
     }

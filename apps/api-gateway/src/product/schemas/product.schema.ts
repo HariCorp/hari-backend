@@ -1,8 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+
+// Định nghĩa ProductDocument bằng HydratedDocument
+export type ProductDocument = HydratedDocument<Product>;
 
 @Schema({ timestamps: true })
-export class Product extends Document {
+export class Product {
   @Prop({ required: true, type: String })
   name: string;
 
@@ -21,14 +24,14 @@ export class Product extends Document {
   @Prop({ type: Number, default: 0 })
   initialStock: number;
 
-  @Prop({ type: String })
+  @Prop({ type: String, unique: true })
   sku?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
   category: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  seller: Types.ObjectId;
+  userId: Types.ObjectId;
 
   @Prop({ type: Date })
   closingTime?: Date;
