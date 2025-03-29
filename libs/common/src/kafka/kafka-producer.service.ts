@@ -30,6 +30,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.user.verifyCredentials',
 
     'ms.product.create',
+    'ms.product.findAll',
   ];
 
   // Track subscribed topics and connected status

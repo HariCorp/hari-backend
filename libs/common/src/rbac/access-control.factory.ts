@@ -23,7 +23,11 @@ export class AccessControlFactory {
       .createAny('product')
       .readAny('product')
       .updateAny('product')
-      .deleteAny('product');
+      .deleteAny('product')
+      .createAny('category')
+      .readAny('category')
+      .updateAny('category')
+      .deleteAny('category')
 
     // Admin - can manage users (except super admins) and all products
     ac.grant(UserRole.ADMIN)
@@ -34,7 +38,11 @@ export class AccessControlFactory {
       .createAny('product')
       .readAny('product')
       .updateAny('product')
-      .deleteAny('product');
+      .deleteAny('product')
+      .createAny('category')
+      .readAny('category')
+      .updateAny('category')
+      .deleteAny('category');
 
     // Seller - can manage own products and read/update own profile
     ac.grant(UserRole.SELLER)
@@ -43,13 +51,15 @@ export class AccessControlFactory {
       .createOwn('product')
       .readAny('product')
       .updateOwn('product')
-      .deleteOwn('product');
+      .deleteOwn('product')
+      .readAny('category');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
       .readOwn('user')
       .updateOwn('user')
-      .readAny('product');
+      .readAny('product')
+      .readAny('category');
 
     return ac;
   }

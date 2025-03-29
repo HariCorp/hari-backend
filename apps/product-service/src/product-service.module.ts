@@ -6,6 +6,8 @@ import { ClientsModule } from '@nestjs/microservices';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from 'apps/api-gateway/src/product/schemas/product.schema';
 import { CommonModule } from '@app/common';
+import { Category, CategorySchema } from 'apps/api-gateway/src/product/schemas/category.schema';
+import { CategoryService } from './category.service';
 
 @Module({
   imports: [
@@ -22,11 +24,12 @@ import { CommonModule } from '@app/common';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([
-      {name: Product.name, schema: ProductSchema}
+      {name: Product.name, schema: ProductSchema},
+      {name: Category.name, schema: CategorySchema}
     ]),
   ],
   
   controllers: [ProductServiceController],
-  providers: [ProductServiceService],
+  providers: [ProductServiceService, CategoryService],
 })
 export class ProductServiceModule {}

@@ -97,7 +97,7 @@ async function bootstrap() {
     const existingAdmin = extractUserFromResponse(response, adminEmail);
     
     if (existingAdmin) {
-      logger.log(`Admin account already exists: ${adminEmail}`);
+      logger.log(`SUP_ADMIN found`);
     } else {
       logger.log('No admin found. Creating admin account...');
       
