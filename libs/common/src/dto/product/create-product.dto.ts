@@ -1,12 +1,12 @@
 import { Command } from '@app/common/kafka';
 import { Type } from 'class-transformer';
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsArray, 
-  IsBoolean, 
-  IsDate, 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  IsDate,
   IsMongoId,
   Min,
   Max,
@@ -42,16 +42,18 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  stock?: number = 0;
+  initialStock?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  initialStock?: number;
+  stock?: number;
 
   @IsString()
   @IsOptional()
-  @Matches(/^[A-Za-z0-9-]+$/, { message: 'SKU chỉ chứa chữ cái, số và dấu gạch ngang' })
+  @Matches(/^[A-Za-z0-9-]+$/, {
+    message: 'SKU chỉ chứa chữ cái, số và dấu gạch ngang',
+  })
   sku?: string;
 
   @IsMongoId({ message: 'Category phải là MongoDB ObjectId hợp lệ' })
@@ -86,12 +88,19 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => String)
   tags?: string[] = []; // Thêm danh sách tag cho SEO hoặc tìm kiếm
+
+  constructor(partial: Partial<CreateProductDto>) {
+    Object.assign(this, partial);
+    if (this.initialStock !== undefined && this.stock === undefined) {
+      this.stock = this.initialStock; // Đảm bảo stock mặc định bằng initialStock khi tạo mới
+    }
+  }
 }
 
 export class CreateProductCommand extends Command {
   constructor(
     public readonly data: CreateProductDto,
-    metadata?: any
+    metadata?: any,
   ) {
     super(metadata);
   }
