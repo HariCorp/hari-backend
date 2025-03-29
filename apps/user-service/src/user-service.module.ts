@@ -5,6 +5,7 @@ import { UserServiceController } from './user-service.controller';
 import { UserServiceService } from './user-service.service';
 import { CommonModule } from '@app/common';
 import { User, UserSchema } from './schemas/user.schema';
+import { UserInitService } from './initialization/user-init.service';
 
 @Module({
   imports: [
@@ -25,6 +26,6 @@ import { User, UserSchema } from './schemas/user.schema';
     ]),
   ],
   controllers: [UserServiceController],
-  providers: [UserServiceService],
+  providers: [UserServiceService, UserInitService],
 })
 export class UserServiceModule {}

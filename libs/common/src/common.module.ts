@@ -1,7 +1,8 @@
-// libs/common/src/common.module.ts - Updated
+// libs/common/src/common.module.ts - Updated to include RBAC module
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { KafkaModule } from './kafka/kafka.module';
+import { RbacModule } from './rbac/rbac.module';
 // Import validation and filters
 import { KafkaValidationPipe } from './validation/kafka-validation.pipe';
 import { ValidationPipe } from './validation/validation.pipe';
@@ -23,6 +24,8 @@ import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from '
       }),
       inject: [ConfigService],
     }),
+    // Include the RBAC module
+    RbacModule,
   ],
   providers: [
     // Provide validation pipes
@@ -35,6 +38,8 @@ import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from '
   ],
   exports: [
     KafkaModule,
+    // Export RBAC module
+    RbacModule,
     // Export validation pipes
     ValidationPipe,
     KafkaValidationPipe,
@@ -42,7 +47,6 @@ import { HttpExceptionFilter, AllExceptionsFilter, KafkaExceptionFilter } from '
     HttpExceptionFilter,
     AllExceptionsFilter,
     KafkaExceptionFilter,
-
   ],
 })
 export class CommonModule {}
