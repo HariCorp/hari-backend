@@ -1,7 +1,10 @@
 // libs/common/src/kafka/kafka-producer.service.ts
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
-import { KafkaMessage, MessageMetadata } from './interfaces/kafka-message.interface';
+import {
+  KafkaMessage,
+  MessageMetadata,
+} from './interfaces/kafka-message.interface';
 import { KafkaSerializer } from './serialization/kafka-serializer';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
@@ -12,25 +15,55 @@ export class KafkaProducerService implements OnModuleInit {
   private readonly defaultRequestTimeout = 10000; // 10 seconds
   private readonly maxRetries = 3;
   private readonly retryDelay = 1000; // 1 second
-  
+
   // Common topics that will be pre-subscribed
   private readonly commonTopics = [
+    // Auth service topics
     'ms.auth.register',
     'ms.auth.login',
     'ms.auth.refresh',
     'ms.auth.validate',
     'ms.auth.logout',
-    'ms.user.create',
 
+    // User service topics
+    'ms.user.create',
     'ms.user.findAll',
     'ms.user.findById',
+    'ms.user.findByUsername',
+    'ms.user.findByEmail',
     'ms.user.update',
     'ms.user.delete',
     'ms.user.authenticate',
     'ms.user.verifyCredentials',
+    'ms.user.findUserWithAuth',
 
+    // Product service topics
     'ms.product.create',
     'ms.product.findAll',
+    'ms.product.findById',
+    'ms.product.update',
+    'ms.product.delete',
+    'ms.product.findByCategory',
+    'ms.product.findByUser',
+
+    // Category service topics
+    'ms.category.create',
+    'ms.category.findAll',
+    'ms.category.findById',
+    'ms.category.update',
+    'ms.category.delete',
+    'ms.category.getDirectChildren',
+
+    // Event topics
+    'ms.user.created',
+    'ms.product.created',
+    'ms.order.created',
+    'ms.payment.completed',
+
+    // Error and retry topics
+    'ms.error',
+    'ms.retry',
+    'ms.dead-letter',
   ];
 
   // Track subscribed topics and connected status
@@ -68,9 +101,13 @@ export class KafkaProducerService implements OnModuleInit {
       // Connect after subscribing to all topics
       await this.kafkaClient.connect();
       this.isConnected = true;
-      this.logger.log(`Kafka producer connected and subscribed to ${this.subscribedTopics.size} topics`);
+      this.logger.log(
+        `Kafka producer connected and subscribed to ${this.subscribedTopics.size} topics`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to initialize Kafka producer: ${error.message}`);
+      this.logger.error(
+        `Failed to initialize Kafka producer: ${error.message}`,
+      );
       this.initPromise = null;
       throw error;
     }
@@ -95,21 +132,21 @@ export class KafkaProducerService implements OnModuleInit {
     if (this.subscribedTopics.has(topic)) {
       return;
     }
-    
+
     try {
       // If already connected, need to disconnect and reconnect after subscribing
       const wasConnected = this.isConnected;
-      
+
       if (wasConnected) {
         this.logger.warn(`Adding new topic ${topic} requires reconnection`);
         // No direct way to disconnect in ClientKafka, but we can track our own state
         this.isConnected = false;
       }
-      
+
       this.kafkaClient.subscribeToResponseOf(topic);
       this.subscribedTopics.add(topic);
       this.logger.debug(`Subscribed to response of topic: ${topic}`);
-      
+
       // Reconnect if we were connected before
       if (wasConnected) {
         await this.kafkaClient.connect();
@@ -117,7 +154,9 @@ export class KafkaProducerService implements OnModuleInit {
         this.logger.debug('Reconnected after subscribing to new topic');
       }
     } catch (error) {
-      this.logger.error(`Failed to subscribe to topic ${topic}: ${error.message}`);
+      this.logger.error(
+        `Failed to subscribe to topic ${topic}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -139,10 +178,10 @@ export class KafkaProducerService implements OnModuleInit {
     try {
       // Ensure initialized
       await this.ensureInitialized();
-      
+
       const messageKey = key || this.generateMessageKey();
       const metadata = this.createMetadata(messageKey);
-      
+
       const kafkaMessage: KafkaMessage<T> = {
         key: messageKey,
         value: message,
@@ -152,7 +191,9 @@ export class KafkaProducerService implements OnModuleInit {
       await this.emitWithRetry(topic, kafkaMessage, headers);
       this.logger.debug(`Message sent to topic ${topic}`);
     } catch (error) {
-      this.logger.error(`Failed to send message to topic ${topic}: ${error.message}`);
+      this.logger.error(
+        `Failed to send message to topic ${topic}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -176,7 +217,7 @@ export class KafkaProducerService implements OnModuleInit {
     try {
       // Ensure service is initialized and topic is subscribed
       await this.ensureInitialized();
-      
+
       // Check if we need to subscribe to this topic
       if (!this.subscribedTopics.has(topic)) {
         await this.subscribeToResponseOf(topic);
@@ -184,18 +225,20 @@ export class KafkaProducerService implements OnModuleInit {
         await this.kafkaClient.connect();
         this.isConnected = true;
       }
-      
+
       const messageKey = key || this.generateMessageKey();
       const metadata = this.createMetadata(messageKey);
-      
+
       const kafkaMessage: KafkaMessage<T> = {
         key: messageKey,
         value: message,
         metadata,
       };
 
-      this.logger.debug(`Sending request to topic ${topic} with key ${messageKey}`);
-      
+      this.logger.debug(
+        `Sending request to topic ${topic} with key ${messageKey}`,
+      );
+
       const response = await firstValueFrom(
         this.kafkaClient
           .send<R, KafkaMessage<T>>(topic, kafkaMessage)
@@ -205,10 +248,14 @@ export class KafkaProducerService implements OnModuleInit {
       return response;
     } catch (error) {
       if (error.name === 'TimeoutError') {
-        this.logger.error(`Request to ${topic} timed out after ${responseTimeout}ms`);
+        this.logger.error(
+          `Request to ${topic} timed out after ${responseTimeout}ms`,
+        );
         throw new Error(`Request to ${topic} timed out`);
       }
-      this.logger.error(`Failed to send request to topic ${topic}: ${error.message}`);
+      this.logger.error(
+        `Failed to send request to topic ${topic}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -223,13 +270,15 @@ export class KafkaProducerService implements OnModuleInit {
     retryCount = 0,
   ): Promise<void> {
     try {
-      await firstValueFrom(this.kafkaClient.emit(topic, { ...message, headers }));
+      await firstValueFrom(
+        this.kafkaClient.emit(topic, { ...message, headers }),
+      );
     } catch (error) {
       if (retryCount < this.maxRetries) {
         this.logger.warn(
           `Failed to emit message to ${topic}. Retrying (${retryCount + 1}/${this.maxRetries})...`,
         );
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
         return this.emitWithRetry(topic, message, headers, retryCount + 1);
       }
       throw error;

@@ -26,10 +26,15 @@ import { CategoryModule } from './category/category.module';
           options: {
             client: {
               clientId: configService.get('SERVICE_NAME', 'api-gateway-client'),
-              brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
+              brokers: configService
+                .get<string>('KAFKA_BROKERS', 'localhost:9092')
+                .split(','),
             },
             consumer: {
-              groupId: configService.get<string>('KAFKA_GROUP_ID', 'api-gateway-consumer-group'),
+              groupId: configService.get<string>(
+                'KAFKA_GROUP_ID',
+                'api-gateway-consumer-group',
+              ),
             },
           },
         }),

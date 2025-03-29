@@ -12,8 +12,12 @@ export class Category {
   @Prop()
   description?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Category', default: null })
-  parentId?: Types.ObjectId; // cho phép category phân cấp (nếu cần)
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Category',
+    default: null,
+  })
+  parentId?: Types.ObjectId;
 
   @Prop({ type: String })
   slug: string;

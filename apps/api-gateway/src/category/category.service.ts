@@ -12,7 +12,7 @@ export class CategoryService {
 
   async create(createCategoryDto: CreateCategoryDto) {
     this.logger.log('Creating category');
-    
+
     const command = {
       data: createCategoryDto,
       metadata: {
@@ -20,21 +20,21 @@ export class CategoryService {
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'command'
-      }
+        type: 'command',
+      },
     };
-    
+
     const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.create',
-      command
+      command,
     );
-    
+
     return response;
   }
 
   async findAll(query: any) {
     this.logger.log('Finding all categories');
-    
+
     const kafkaQuery = {
       filter: query,
       metadata: {
@@ -42,21 +42,21 @@ export class CategoryService {
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'query'
-      }
+        type: 'query',
+      },
     };
-    
+
     const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.findAll',
-      kafkaQuery
+      kafkaQuery,
     );
-    
+
     return response;
   }
 
   async findOne(id: string) {
     this.logger.log(`Finding category with ID: ${id}`);
-    
+
     const query = {
       id,
       metadata: {
@@ -64,21 +64,21 @@ export class CategoryService {
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'query'
-      }
+        type: 'query',
+      },
     };
-    
+
     const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.findById',
-      query
+      query,
     );
-    
+
     return response;
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
     this.logger.log(`Updating category with ID: ${id}`);
-    
+
     const command = {
       id,
       data: updateCategoryDto,
@@ -87,21 +87,21 @@ export class CategoryService {
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'command'
-      }
+        type: 'command',
+      },
     };
-    
+
     const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.update',
-      command
+      command,
     );
-    
+
     return response;
   }
 
   async remove(id: string) {
     this.logger.log(`Deleting category with ID: ${id}`);
-    
+
     const command = {
       id,
       metadata: {
@@ -109,15 +109,40 @@ export class CategoryService {
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'command'
-      }
+        type: 'command',
+      },
     };
-    
+
     const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.delete',
-      command
+      command,
     );
-    
+
     return response;
+  }
+  async getDirectChildren(parentId?: string) {
+    this.logger.log(
+      `Getting direct children of category: ${parentId || 'root categories'}`,
+    );
+
+    const query = {
+      parentId,
+      metadata: {
+        id: `api-${Date.now()}`,
+        correlationId: `api-${Date.now()}`,
+        timestamp: Date.now(),
+        source: 'api-gateway',
+        type: 'query',
+      },
+    };
+
+    const response = await this.kafkaProducer.sendAndReceive<any, any>(
+      'ms.category.getDirectChildren',
+      query,
+    );
+
+    const data: any = response.data;
+
+    return data;
   }
 }
