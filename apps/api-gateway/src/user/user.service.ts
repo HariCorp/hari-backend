@@ -9,6 +9,7 @@ export class UserService {
   constructor(private readonly kafkaProducer: KafkaProducerService) {}
 
   async createUser(createUserDto: CreateUserDto) {
+    console.log('[' + new Date().toLocaleTimeString() + '] 🔍 [hari-backend/apps/api-gateway/src/user/user.service.ts:11] - ' + JSON.stringify(createUserDto))
     this.logger.log(`Creating user with username: ${createUserDto.username}`);
     
     const command = {

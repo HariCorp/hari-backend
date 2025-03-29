@@ -52,6 +52,9 @@ services:
       - KAFKA_SSL=false
       - SERVICE_NAME=api-gateway
       - REQUEST_TIMEOUT=30000
+      - SUPER_ADMIN_EMAIL=admin@gmail.com
+      - SUPER_ADMIN_PASSWORD=123qwe
+      - SUPER_ADMIN_USERNAME=admin
     depends_on:
       - kafka
       - user-service
@@ -104,9 +107,6 @@ services:
       - KAFKA_GROUP_ID=user-service-group
       - KAFKA_SSL=false
       - SERVICE_NAME=user-service
-      - SUPER_ADMIN_EMAIL=admin@gmail.com
-      - SUPER_ADMIN_PASSWORD=123qwe
-      - SUPER_ADMIN_USERNAME=superadmin
     depends_on:
       - kafka
     volumes:
