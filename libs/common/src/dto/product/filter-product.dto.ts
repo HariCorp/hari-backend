@@ -1,14 +1,16 @@
 // libs/common/src/dto/product/filter-product.dto.ts
 import { Type } from 'class-transformer';
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsBoolean, 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
   IsMongoId,
   IsDate,
   Min,
-  Max
+  Max,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Types } from 'mongoose';
 
@@ -16,6 +18,10 @@ export class FilterProductDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsString()
+  @IsOptional()
+  brand?: string;
 
   @IsString()
   @IsOptional()
@@ -68,7 +74,13 @@ export class FilterProductDto {
   @Type(() => Boolean)
   isActive?: boolean;
 
-  // Pagination options
+  // Tags can be a single string or an array of strings
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[] | string;
+
+  // Pagination and sorting options
   @IsNumber()
   @IsOptional()
   @Min(1)
@@ -82,7 +94,6 @@ export class FilterProductDto {
   @Type(() => Number)
   limit?: number = 10;
 
-  // Sorting options
   @IsString()
   @IsOptional()
   sortBy?: string = 'createdAt';

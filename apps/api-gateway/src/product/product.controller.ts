@@ -11,7 +11,8 @@ import {
   UseGuards,
   Logger,
   NotFoundException,
-  ForbiddenException,
+  ParseArrayPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import {
@@ -37,13 +38,6 @@ export class ProductController {
     @Body() createProductDto: CreateProductDto,
     @CurrentUser() user,
   ) {
-    console.log(
-      '[' +
-        new Date().toLocaleTimeString() +
-        '] 🔍 [hari-backend/apps/api-gateway/src/product/product.controller.ts:19] - ' +
-        createProductDto,
-    );
-
     this.logger.log(`User ${user.username} is creating a product`);
     return this.productService.create(createProductDto, user);
   }
@@ -51,7 +45,49 @@ export class ProductController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @RBAC('read', 'product')
-  async findAll(@Query() filterDto: FilterProductDto) {
+  async findAll(
+    // Define all possible query parameters
+    @Query('name') name?: string,
+    @Query('brand') brand?: string,
+    @Query('minPrice') minPrice?: number,
+    @Query('maxPrice') maxPrice?: number,
+    @Query('minDiscountPercentage') minDiscountPercentage?: number,
+    @Query('hasStock') hasStock?: boolean,
+    @Query('category') category?: string,
+    @Query('tags') tags?: string, // Can be comma-separated
+    @Query('isActive') isActive?: boolean,
+    @Query('search') search?: string,
+    @Query('page', new DefaultValuePipe(1)) page?: number,
+    @Query('limit', new DefaultValuePipe(10)) limit?: number,
+    @Query('sortBy', new DefaultValuePipe('createdAt')) sortBy?: string,
+    @Query('sortOrder', new DefaultValuePipe('desc'))
+    sortOrder?: 'asc' | 'desc',
+  ) {
+    // Construct the filter object with all provided parameters
+    const filterDto: FilterProductDto = {
+      name,
+      brand,
+      minPrice,
+      maxPrice,
+      minDiscountPercentage,
+      hasStock,
+      category,
+      tags: tags ? tags.split(',').map((tag) => tag.trim()) : undefined,
+      isActive,
+      search,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    };
+
+    // Remove undefined values
+    Object.keys(filterDto).forEach((key) => {
+      if (filterDto[key] === undefined) {
+        delete filterDto[key];
+      }
+    });
+
     this.logger.log(
       `Getting all products with filters: ${JSON.stringify(filterDto)}`,
     );
@@ -123,6 +159,46 @@ export class ProductController {
     const filters = {
       ...filterDto,
       userId: userId,
+    };
+
+    return this.productService.findAll(filters);
+  }
+
+  @Get('search/tags')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RBAC('read', 'product')
+  async findByTags(
+    @Query(
+      'tags',
+      new ParseArrayPipe({ items: String, separator: ',', optional: true }),
+    )
+    tags?: string[],
+    @Query() filterDto?: FilterProductDto,
+  ) {
+    this.logger.log(`Searching products by tags: ${tags?.join(', ')}`);
+
+    // Combine the tags filter with other filters
+    const filters = {
+      ...filterDto,
+      tags,
+    };
+
+    return this.productService.findAll(filters);
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RBAC('read', 'product')
+  async search(
+    @Query('q') query: string,
+    @Query() filterDto: FilterProductDto,
+  ) {
+    this.logger.log(`Searching products with query: ${query}`);
+
+    // Use the search parameter for full-text search
+    const filters = {
+      ...filterDto,
+      search: query,
     };
 
     return this.productService.findAll(filters);

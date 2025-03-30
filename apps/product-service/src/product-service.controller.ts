@@ -45,26 +45,17 @@ export class ProductServiceController {
 
   @MessagePattern('ms.product.findAll')
   async findAll(command) {
-    console.log(
-      '[' +
-        new Date().toLocaleTimeString() +
-        '] 🔍 [hari-backend/apps/product-service/src/product-service.controller.ts:33] - ' +
-        command,
-    );
     try {
       const filter = command.filter;
       const response = await this.productServiceService.findAll(filter);
+
       return {
         status: 'success',
         data: response,
       };
     } catch (error) {
-      console.log(
-        '[' +
-          new Date().toLocaleTimeString() +
-          '] 🔍 [hari-backend/apps/product-service/src/product-service.controller.ts:42] - ' +
-          error,
-      );
+      console.log(`Find all products failed: ${error.message}`, error.stack);
+
       return {
         status: 'error',
         error: {

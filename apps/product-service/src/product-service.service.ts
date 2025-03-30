@@ -6,7 +6,7 @@ import {
 } from '@app/common';
 import { ProductCreatedEvent } from '@app/common/dto/product/product-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   Product,
@@ -27,10 +27,13 @@ export interface FindAllResponse {
 
 @Injectable()
 export class ProductServiceService {
+  private readonly logger = new Logger(ProductServiceService.name);
+
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     private readonly kafkaProducer: KafkaProducerService,
   ) {}
+
   async create(createProductDto: CreateProductDto) {
     try {
       const product = await this.productModel.create(createProductDto);
@@ -68,6 +71,7 @@ export class ProductServiceService {
         sortBy = 'createdAt',
         sortOrder = 'desc',
         name,
+        brand,
         search,
         minPrice,
         maxPrice,
@@ -78,38 +82,54 @@ export class ProductServiceService {
         closingBefore,
         closingAfter,
         isActive,
+        tags,
       } = filter;
-      console.log(
-        '[' +
-          new Date().toLocaleTimeString() +
-          '] 🔍 [hari-backend/apps/product-service/src/product-service.service.ts:60] - ' +
-          filter,
+
+      this.logger.log(
+        `Finding products with filters: ${JSON.stringify(filter)}`,
       );
 
-      // Build the filter query directly
+      // Build the filter query
       const filterQuery: FilterQuery<ProductDocument> = {};
 
-      // Text search (name, description, tags)
+      // Text search for full-text search across multiple fields
       if (search) {
         filterQuery.$text = { $search: search };
       }
 
-      // Name exact match or regex match
+      // Name partial match using case-insensitive regex
       if (name) {
         filterQuery.name = { $regex: name, $options: 'i' };
       }
 
-      // Price range
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        filterQuery.price = {};
-        if (minPrice !== undefined) filterQuery.price.$gte = minPrice;
-        if (maxPrice !== undefined) filterQuery.price.$lte = maxPrice;
+      // Brand partial match using case-insensitive regex
+      if (brand) {
+        filterQuery.brand = { $regex: brand, $options: 'i' };
       }
 
-      // Discount percentage minimum
-      if (minDiscountPercentage !== undefined) {
-        filterQuery.discountPercentage = { $gte: minDiscountPercentage };
+      // Tags filtering - can be a single tag or array of tags
+      if (tags) {
+        if (Array.isArray(tags)) {
+          // If multiple tags provided, match any of them
+          filterQuery.tags = { $in: tags.map((tag) => new RegExp(tag, 'i')) };
+        } else {
+          // If single tag provided, match it
+          filterQuery.tags = { $regex: tags, $options: 'i' };
+        }
       }
+
+      // if (minPrice !== undefined || maxPrice !== undefined) {
+      //   filterQuery.price = {};
+      //   if (minPrice !== undefined) filterQuery.price.$gte = Number(minPrice);
+      //   if (maxPrice !== undefined) filterQuery.price.$lte = Number(maxPrice);
+      // }
+
+      // Discount percentage minimum (phần cần sửa)
+      // if (minDiscountPercentage !== undefined) {
+      //   filterQuery.discountPercentage = {
+      //     $gte: Number(minDiscountPercentage),
+      //   };
+      // }
 
       // Has stock filter
       if (hasStock !== undefined) {
@@ -123,14 +143,15 @@ export class ProductServiceService {
 
       // User filter
       if (userId) {
-        filterQuery.userId = new Types.ObjectId(userId.toString());
+        filterQuery.userId = userId.toString();
       }
 
       // Closing time range
       if (closingBefore || closingAfter) {
         filterQuery.closingTime = {};
-        if (closingBefore) filterQuery.closingTime.$lte = closingBefore;
-        if (closingAfter) filterQuery.closingTime.$gte = closingAfter;
+        if (closingBefore)
+          filterQuery.closingTime.$lte = new Date(closingBefore);
+        if (closingAfter) filterQuery.closingTime.$gte = new Date(closingAfter);
       }
 
       // Active status
@@ -145,6 +166,11 @@ export class ProductServiceService {
       const sort: any = {};
       sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
+      this.logger.debug(`Filter query: ${JSON.stringify(filterQuery)}`);
+      this.logger.debug(
+        `Sort: ${JSON.stringify(sort)}, Skip: ${skip}, Limit: ${limit}`,
+      );
+
       // Execute queries in parallel for efficiency
       const [products, total] = await Promise.all([
         this.productModel
@@ -152,14 +178,16 @@ export class ProductServiceService {
           .sort(sort)
           .skip(skip)
           .limit(limit)
-          .populate('category', 'name') // Populate category data
+          .populate('category', 'name description slug') // Populate category with more fields
           .populate('userId', 'username email') // Populate user data
           .exec(),
         this.productModel.countDocuments(filterQuery),
       ]);
 
       const totalPages = Math.ceil(total / limit);
-      console.log(`Found ${products.length} products out of ${total} total`);
+      this.logger.log(
+        `Found ${products.length} products out of ${total} total`,
+      );
 
       return {
         products,
@@ -171,8 +199,13 @@ export class ProductServiceService {
         hasPreviousPage: page > 1,
       };
     } catch (error) {
-      console.log(`Failed to find products: ${error.message}`);
+      this.logger.error(
+        `Failed to find products: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
+
+  // Add other methods (findOne, update, delete, etc.) here
 }
