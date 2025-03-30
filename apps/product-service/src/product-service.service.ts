@@ -33,9 +33,6 @@ export class ProductServiceService {
   ) {}
   async create(createProductDto: CreateProductDto) {
     try {
-      if (typeof createProductDto.userId === 'string') {
-        createProductDto.userId = new Types.ObjectId(createProductDto.userId);
-      }
       const product = await this.productModel.create(createProductDto);
 
       await this.kafkaProducer.send(

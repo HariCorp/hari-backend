@@ -31,8 +31,8 @@ export class Product {
   @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
   category: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  @Prop({ type: String, required: true })
+  userId: string;
 
   @Prop({ type: Date })
   closingTime?: Date;
@@ -45,7 +45,7 @@ export class Product {
 
   @Prop({ type: String })
   brand?: string;
-  
+
   @Prop({ type: [String], default: [] })
   tags: string[];
 
@@ -66,12 +66,12 @@ export class Product {
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // Thêm virtual getters vào schema
-ProductSchema.virtual('finalPrice').get(function() {
+ProductSchema.virtual('finalPrice').get(function () {
   if (!this.discountPercentage) return this.price;
   return this.price * (1 - this.discountPercentage / 100);
 });
 
-ProductSchema.virtual('stockStatus').get(function() {
+ProductSchema.virtual('stockStatus').get(function () {
   if (this.stock <= 0) return 'out_of_stock';
   if (this.stock < 10) return 'low_stock';
   return 'in_stock';
@@ -84,7 +84,7 @@ ProductSchema.set('toJSON', {
     ret.id = ret._id;
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Đảm bảo các virtuals được bao gồm khi chuyển đổi sang Object
@@ -94,7 +94,7 @@ ProductSchema.set('toObject', {
     ret.id = ret._id;
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Tạo các indexes để tối ưu truy vấn
