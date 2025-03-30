@@ -6,7 +6,7 @@ import {
 } from '@app/common';
 import { ProductCreatedEvent } from '@app/common/dto/product/product-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   Product,
@@ -207,5 +207,14 @@ export class ProductServiceService {
     }
   }
 
-  // Add other methods (findOne, update, delete, etc.) here
+  async findOne(productId: string) {
+    try {
+      const product = await this.productModel.findById(productId);
+      if (!product) {
+        throw new NotFoundException(`Product not found with id: ${productId}`);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -109,7 +109,7 @@ export class ProductService {
       }
 
       const query = {
-        id,
+        data: id,
         metadata: {
           id: `api-${Date.now()}`,
           correlationId: `api-${Date.now()}`,

@@ -67,6 +67,27 @@ export class ProductServiceController {
     }
   }
 
+  @MessagePattern('ms.product.findById')
+  async findOne(command) {
+    try {
+      const productId = command.data;
+      const product = await this.productServiceService.findOne(productId);
+      return {
+        status: 'success',
+        data: product,
+      };
+    } catch (error) {
+      console.log(`Failed to find product by ID: ${command.data}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'FIND_PRODUCT_BY_ID_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
   @MessagePattern('ms.category.create')
   async createCategory(command: any) {
     try {
