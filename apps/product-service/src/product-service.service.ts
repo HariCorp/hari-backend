@@ -1,9 +1,17 @@
-import { CreateProductDto, FilterProductDto, KafkaProducerService, MongoErrorCode } from '@app/common';
+import {
+  CreateProductDto,
+  FilterProductDto,
+  KafkaProducerService,
+  MongoErrorCode,
+} from '@app/common';
 import { ProductCreatedEvent } from '@app/common/dto/product/product-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Product, ProductDocument } from 'apps/api-gateway/src/product/schemas/product.schema';
+import {
+  Product,
+  ProductDocument,
+} from 'apps/api-gateway/src/product/schemas/product.schema';
 import { FilterQuery, Types } from 'mongoose';
 import { Model } from 'mongoose';
 
@@ -21,18 +29,24 @@ export interface FindAllResponse {
 export class ProductServiceService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
-    private readonly kafkaProducer: KafkaProducerService
+    private readonly kafkaProducer: KafkaProducerService,
   ) {}
   async create(createProductDto: CreateProductDto) {
     try {
+      if (typeof createProductDto.userId === 'string') {
+        createProductDto.userId = new Types.ObjectId(createProductDto.userId);
+      }
       const product = await this.productModel.create(createProductDto);
-      
-      await this.kafkaProducer.send('ms.product.created', new ProductCreatedEvent(
-        product._id,
-        product.name,
-        product.userId.toString(),
-      ));
-      
+
+      await this.kafkaProducer.send(
+        'ms.product.created',
+        new ProductCreatedEvent(
+          product._id,
+          product.name,
+          product.userId.toString(),
+        ),
+      );
+
       return product;
     } catch (error) {
       if (error.code === MongoErrorCode.DuplicateKey) {
@@ -44,17 +58,17 @@ export class ProductServiceService {
           throw new DuplicateKeyException(duplicateField, duplicateValue);
         }
       }
-      
+
       throw error;
     }
   }
 
   async findAll(filter: FilterProductDto = {}): Promise<FindAllResponse> {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        sortBy = 'createdAt', 
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
         sortOrder = 'desc',
         name,
         search,
@@ -68,7 +82,12 @@ export class ProductServiceService {
         closingAfter,
         isActive,
       } = filter;
-      console.log('[' + new Date().toLocaleTimeString() + '] 🔍 [hari-backend/apps/product-service/src/product-service.service.ts:60] - ' + filter)
+      console.log(
+        '[' +
+          new Date().toLocaleTimeString() +
+          '] 🔍 [hari-backend/apps/product-service/src/product-service.service.ts:60] - ' +
+          filter,
+      );
 
       // Build the filter query directly
       const filterQuery: FilterQuery<ProductDocument> = {};
