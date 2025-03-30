@@ -13,6 +13,7 @@ import {
   NotFoundException,
   ParseArrayPipe,
   DefaultValuePipe,
+  Patch,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import {
@@ -202,5 +203,14 @@ export class ProductController {
     };
 
     return this.productService.findAll(filters);
+  }
+  @Patch(':id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RBAC('update', 'product', 'own')
+  async toggleActive(@Param('id') id: string, @CurrentUser() user) {
+    this.logger.log(
+      `User ${user.username} is toggling active status for product ${id}`,
+    );
+    return this.productService.toggleActive(id, user);
   }
 }

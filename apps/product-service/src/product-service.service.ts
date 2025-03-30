@@ -1,8 +1,10 @@
+// apps/product-service/src/product-service.service.ts
 import {
   CreateProductDto,
   FilterProductDto,
   KafkaProducerService,
   MongoErrorCode,
+  UpdateProductDto,
 } from '@app/common';
 import { ProductCreatedEvent } from '@app/common/dto/product/product-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
@@ -58,7 +60,6 @@ export class ProductServiceService {
           throw new DuplicateKeyException(duplicateField, duplicateValue);
         }
       }
-
       throw error;
     }
   }
@@ -89,80 +90,54 @@ export class ProductServiceService {
         `Finding products with filters: ${JSON.stringify(filter)}`,
       );
 
-      // Build the filter query
       const filterQuery: FilterQuery<ProductDocument> = {};
 
-      // Text search for full-text search across multiple fields
       if (search) {
         filterQuery.$text = { $search: search };
       }
-
-      // Name partial match using case-insensitive regex
       if (name) {
         filterQuery.name = { $regex: name, $options: 'i' };
       }
-
-      // Brand partial match using case-insensitive regex
       if (brand) {
         filterQuery.brand = { $regex: brand, $options: 'i' };
       }
-
-      // Tags filtering - can be a single tag or array of tags
       if (tags) {
         if (Array.isArray(tags)) {
-          // If multiple tags provided, match any of them
           filterQuery.tags = { $in: tags.map((tag) => new RegExp(tag, 'i')) };
         } else {
-          // If single tag provided, match it
           filterQuery.tags = { $regex: tags, $options: 'i' };
         }
       }
-
-      // if (minPrice !== undefined || maxPrice !== undefined) {
-      //   filterQuery.price = {};
-      //   if (minPrice !== undefined) filterQuery.price.$gte = Number(minPrice);
-      //   if (maxPrice !== undefined) filterQuery.price.$lte = Number(maxPrice);
-      // }
-
-      // Discount percentage minimum (phần cần sửa)
-      // if (minDiscountPercentage !== undefined) {
-      //   filterQuery.discountPercentage = {
-      //     $gte: Number(minDiscountPercentage),
-      //   };
-      // }
-
-      // Has stock filter
-      if (hasStock !== undefined) {
-        filterQuery.stock = hasStock ? { $gt: 0 } : { $lte: 0 };
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        filterQuery.price = {};
+        if (minPrice !== undefined) filterQuery.price.$gte = Number(minPrice);
+        if (maxPrice !== undefined) filterQuery.price.$lte = Number(maxPrice);
       }
-
-      // Category filter
+      if (minDiscountPercentage !== undefined) {
+        filterQuery.discountPercentage = {
+          $gte: Number(minDiscountPercentage),
+        };
+      }
+      if (hasStock !== undefined) {
+        filterQuery.stock = hasStock ? { $gt: 0 } : { $gte: 0 };
+      }
       if (category) {
         filterQuery.category = new Types.ObjectId(category.toString());
       }
-
-      // User filter
       if (userId) {
         filterQuery.userId = userId.toString();
       }
-
-      // Closing time range
       if (closingBefore || closingAfter) {
         filterQuery.closingTime = {};
         if (closingBefore)
           filterQuery.closingTime.$lte = new Date(closingBefore);
         if (closingAfter) filterQuery.closingTime.$gte = new Date(closingAfter);
       }
-
-      // Active status
       if (isActive !== undefined) {
         filterQuery.isActive = isActive;
       }
 
-      // Calculate skip for pagination
       const skip = (page - 1) * limit;
-
-      // Create sort object
       const sort: any = {};
       sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
@@ -171,15 +146,14 @@ export class ProductServiceService {
         `Sort: ${JSON.stringify(sort)}, Skip: ${skip}, Limit: ${limit}`,
       );
 
-      // Execute queries in parallel for efficiency
       const [products, total] = await Promise.all([
         this.productModel
           .find(filterQuery)
           .sort(sort)
           .skip(skip)
           .limit(limit)
-          .populate('category', 'name description slug') // Populate category with more fields
-          .populate('userId', 'username email') // Populate user data
+          .populate('category', 'name description slug')
+          .populate('userId', 'username email')
           .exec(),
         this.productModel.countDocuments(filterQuery),
       ]);
@@ -209,12 +183,74 @@ export class ProductServiceService {
 
   async findOne(productId: string) {
     try {
-      const product = await this.productModel.findById(productId);
+      const product = await this.productModel
+        .findById(productId)
+        .populate('category', 'name')
+        .exec();
       if (!product) {
         throw new NotFoundException(`Product not found with id: ${productId}`);
       }
+      return product;
     } catch (error) {
       throw error;
+    }
+  }
+
+  async update(productId: string, updateProductDto: UpdateProductDto) {
+    try {
+      const product = await this.productModel
+        .findByIdAndUpdate(productId, updateProductDto, {
+          new: true,
+          runValidators: true,
+        })
+        .populate('category', 'name')
+        .exec();
+
+      if (!product) {
+        throw new NotFoundException(`Product not found with id: ${productId}`);
+      }
+
+      return product;
+    } catch (error) {
+      if (error.code === MongoErrorCode.DuplicateKey) {
+        const duplicateField = Object.keys(error.keyPattern)[0];
+        const duplicateValue = error.keyValue[duplicateField];
+        throw new DuplicateKeyException(duplicateField, duplicateValue);
+      }
+      throw error;
+    }
+  }
+
+  async remove(productId: string) {
+    try {
+      const product = await this.productModel
+        .findByIdAndDelete(productId)
+        .exec();
+
+      if (!product) {
+        throw new NotFoundException(`Product not found with id: ${productId}`);
+      }
+
+      return { message: 'Product deleted successfully', product };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async toggleActive(productId: string): Promise<Product> {
+    try {
+      const product = await this.findOne(productId); // Tái sử dụng findOne để kiểm tra tồn tại
+      product.isActive = !product.isActive; // Đổi trạng thái isActive
+      await product.save(); // Lưu thay đổi
+      this.logger.log(
+        `Toggled active status of product ${productId} to ${product.isActive}`,
+      );
+      return product;
+    } catch (error) {
+      this.logger.error(
+        `Failed to toggle active status of product ${productId}: ${error.message}`,
+      );
+      throw error; // Ném lỗi để controller xử lý
     }
   }
 }

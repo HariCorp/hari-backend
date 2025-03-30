@@ -4,6 +4,7 @@ import {
   FilterProductDto,
   KafkaProducerService,
   UpdateProductDto,
+  UserRole,
 } from '@app/common';
 import {
   Injectable,
@@ -21,7 +22,6 @@ export class ProductService {
   constructor(private readonly kafkaProducer: KafkaProducerService) {}
 
   async create(createProductDto: CreateProductDto, user: any) {
-    // Set userId to the user creating the product
     createProductDto.userId = new Types.ObjectId(user.userId);
 
     const command = {
@@ -40,7 +40,6 @@ export class ProductService {
       this.logger.log(
         `Sending create product command: ${JSON.stringify(createProductDto)}`,
       );
-
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.create',
         command,
@@ -51,7 +50,6 @@ export class ProductService {
           response.error.message || 'Failed to create product',
         );
       }
-
       return response.data;
     } catch (error) {
       this.logger.error(`Create product failed: ${error.message}`);
@@ -63,9 +61,7 @@ export class ProductService {
 
   async findAll(filterDto: FilterProductDto = {}) {
     try {
-      // Clean and prepare the filter object to ensure proper type conversion
       const preparedFilter = this.prepareFilterObject(filterDto);
-
       const query = {
         filter: preparedFilter,
         metadata: {
@@ -80,7 +76,6 @@ export class ProductService {
       this.logger.log(
         `Sending find all products query with filters: ${JSON.stringify(preparedFilter)}`,
       );
-
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.findAll',
         query,
@@ -91,7 +86,6 @@ export class ProductService {
           response.error.message || 'Failed to find products',
         );
       }
-
       return response.data;
     } catch (error) {
       this.logger.error(`Find products failed: ${error.message}`);
@@ -103,7 +97,6 @@ export class ProductService {
 
   async findOne(id: string) {
     try {
-      // Validate ObjectId format
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid product ID format');
       }
@@ -120,7 +113,6 @@ export class ProductService {
       };
 
       this.logger.log(`Sending find product by ID query: ${id}`);
-
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.findById',
         query,
@@ -134,7 +126,6 @@ export class ProductService {
           response.error.message || 'Failed to find product',
         );
       }
-
       return response.data;
     } catch (error) {
       this.logger.error(`Find product failed: ${error.message}`);
@@ -150,16 +141,11 @@ export class ProductService {
 
   async update(id: string, updateProductDto: UpdateProductDto, user: any) {
     try {
-      // Validate ObjectId format
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid product ID format');
       }
 
-      // First, check if the product exists and belongs to the user
       const product = await this.findOne(id);
-
-      // Check ownership - required for "own" permission checks
-      // We also allow admins and super admins to update any product
       const isOwner = product.userId.toString() === user.userId;
       const isAdmin =
         user.roles.includes('admin') || user.roles.includes('super_admin');
@@ -170,7 +156,6 @@ export class ProductService {
         );
       }
 
-      // Send update product command
       const command = {
         id,
         data: updateProductDto,
@@ -187,7 +172,6 @@ export class ProductService {
       this.logger.log(
         `Sending update product command for ID ${id}: ${JSON.stringify(updateProductDto)}`,
       );
-
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.update',
         command,
@@ -198,7 +182,6 @@ export class ProductService {
           response.error.message || 'Failed to update product',
         );
       }
-
       return response.data;
     } catch (error) {
       this.logger.error(`Update product failed: ${error.message}`);
@@ -215,19 +198,15 @@ export class ProductService {
 
   async remove(id: string, user: any) {
     try {
-      // Validate ObjectId format
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid product ID format');
       }
 
-      // First, check if the product exists and belongs to the user
       const product = await this.findOne(id);
-
-      // Check ownership - required for "own" permission checks
-      // We also allow admins and super admins to delete any product
       const isOwner = product.userId.toString() === user.userId;
       const isAdmin =
-        user.roles.includes('admin') || user.roles.includes('super_admin');
+        user.roles.includes(UserRole.ADMIN) ||
+        user.roles.includes(UserRole.SUPER_ADMIN);
 
       if (!isOwner && !isAdmin) {
         throw new ForbiddenException(
@@ -235,7 +214,6 @@ export class ProductService {
         );
       }
 
-      // Send delete product command
       const command = {
         id,
         metadata: {
@@ -249,7 +227,6 @@ export class ProductService {
       };
 
       this.logger.log(`Sending delete product command for ID ${id}`);
-
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.product.delete',
         command,
@@ -260,7 +237,6 @@ export class ProductService {
           response.error.message || 'Failed to delete product',
         );
       }
-
       return response.data;
     } catch (error) {
       this.logger.error(`Delete product failed: ${error.message}`);
@@ -275,13 +251,63 @@ export class ProductService {
     }
   }
 
-  /**
-   * Prepare filter object by converting types and handling special cases
-   */
+  async toggleActive(id: string, user) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid product ID format');
+      }
+      const product = await this.findOne(id);
+      const isOwner = product.userId.toString() === user.userId;
+      const isAdmin = user.roles.includes(
+        UserRole.SUPER_ADMIN || UserRole.ADMIN,
+      );
+      if (!isOwner && !isAdmin) {
+        throw new ForbiddenException(
+          'You do not have permission to delete this product',
+        );
+      }
+      const command = {
+        id,
+        data: { isActive: !product.isActive },
+        metadata: {
+          id: `api-${Date.now()}`,
+          correlationId: `api-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'api-gateway',
+          type: 'command',
+          user,
+        },
+      };
+      this.logger.log(
+        `Sending toggle active product command for ID ${id}: ${JSON.stringify({
+          isActive: !product.isActive,
+        })}`,
+      );
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.product.toggleActive',
+        command,
+      );
+      if (response.status === 'error') {
+        throw new BadRequestException(
+          response.error.message || 'Failed to toggle active product',
+        );
+      }
+      return response.data;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException(`Toggle product failed: ${error.message}`);
+    }
+  }
+
   private prepareFilterObject(filter: FilterProductDto): FilterProductDto {
     const prepared: FilterProductDto = {};
 
-    // Chỉ thêm các trường nếu chúng tồn tại và không phải null
     if (filter.name !== undefined && filter.name !== null) {
       prepared.name = filter.name;
     }

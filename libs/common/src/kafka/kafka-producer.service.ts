@@ -45,6 +45,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.product.delete',
     'ms.product.findByCategory',
     'ms.product.findByUser',
+    'ms.product.toggleActive',
 
     // Category service topics
     'ms.category.create',

@@ -1,9 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
-import { ProductServiceService } from './product-service.service';
+// apps/product-service/src/product-service.controller.ts
+import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
-import { CreateProductCommand, KafkaMessageHandler } from '@app/common';
+import { ProductServiceService } from './product-service.service';
 import { CategoryService } from './category-service.service';
-import { UpdateCategoryDto } from '@app/common/dto/product/update-category.dto';
+import { CreateProductCommand, UpdateProductDto } from '@app/common';
 
 @Controller()
 export class ProductServiceController {
@@ -14,25 +14,11 @@ export class ProductServiceController {
 
   @MessagePattern('ms.product.create')
   async createProduct(command: CreateProductCommand) {
-    console.log(
-      '🔍 ~ createProduct ~ hari-backend/apps/product-service/src/product-service.controller.ts:11 ~ command:',
-      command,
-    );
     try {
       const product = await this.productServiceService.create(command.data);
-      console.log(
-        '🔍 ~ createProduct ~ hari-backend/apps/product-service/src/product-service.controller.ts:14 ~ product:',
-        product,
-      );
-      return {
-        status: 'success',
-        data: product,
-      };
+      return { status: 'success', data: product };
     } catch (error) {
-      console.log(
-        '🔍 ~ createProduct ~ hari-backend/apps/product-service/src/product-service.controller.ts:20 ~ error:',
-        error,
-      );
+      console.log(`Failed to create product: ${error.message}`);
       return {
         status: 'error',
         error: {
@@ -48,14 +34,9 @@ export class ProductServiceController {
     try {
       const filter = command.filter;
       const response = await this.productServiceService.findAll(filter);
-
-      return {
-        status: 'success',
-        data: response,
-      };
+      return { status: 'success', data: response };
     } catch (error) {
       console.log(`Find all products failed: ${error.message}`, error.stack);
-
       return {
         status: 'error',
         error: {
@@ -72,10 +53,7 @@ export class ProductServiceController {
     try {
       const productId = command.data;
       const product = await this.productServiceService.findOne(productId);
-      return {
-        status: 'success',
-        data: product,
-      };
+      return { status: 'success', data: product };
     } catch (error) {
       console.log(`Failed to find product by ID: ${command.data}`);
       return {
@@ -88,14 +66,68 @@ export class ProductServiceController {
     }
   }
 
+  @MessagePattern('ms.product.update')
+  async update(command: { id: string; data: UpdateProductDto }) {
+    try {
+      const product = await this.productServiceService.update(
+        command.id,
+        command.data,
+      );
+      return { status: 'success', data: product };
+    } catch (error) {
+      console.log(`Failed to update product: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'UPDATE_PRODUCT_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.product.delete')
+  async delete(command: { id: string }) {
+    try {
+      const result = await this.productServiceService.remove(command.id);
+      return { status: 'success', data: result };
+    } catch (error) {
+      console.log(`Failed to delete product: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'DELETE_PRODUCT_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.product.toggleActive')
+  async toggleActiveProduct(command: { id: string }) {
+    try {
+      const product = await this.productServiceService.toggleActive(command.id);
+      return { status: 'success', data: product };
+    } catch (error) {
+      console.log(
+        `Failed to toggle active status of product: ${error.message}`,
+      );
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'TOGGLE_ACTIVE_PRODUCT_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  // Các phương thức category giữ nguyên như trong code gốc
   @MessagePattern('ms.category.create')
   async createCategory(command: any) {
     try {
       const category = await this.categoryService.create(command.data);
-      return {
-        status: 'success',
-        data: category,
-      };
+      return { status: 'success', data: category };
     } catch (error) {
       console.log(`Failed to create category: ${error.message}`);
       return {
@@ -112,10 +144,7 @@ export class ProductServiceController {
   async findAllCategories(query: any = {}) {
     try {
       const result = await this.categoryService.findAll(query.filter);
-      return {
-        status: 'success',
-        data: result,
-      };
+      return { status: 'success', data: result };
     } catch (error) {
       console.log(`Failed to find categories: ${error.message}`);
       return {
@@ -132,10 +161,7 @@ export class ProductServiceController {
   async findCategoryById(query: { id: string }) {
     try {
       const category = await this.categoryService.findOne(query.id);
-      return {
-        status: 'success',
-        data: category,
-      };
+      return { status: 'success', data: category };
     } catch (error) {
       console.log(`Failed to find category: ${error.message}`);
       return {
@@ -148,28 +174,19 @@ export class ProductServiceController {
     }
   }
 
-  @MessagePattern('ms.category.update')
-  async updateCategory(command: { id: string; data: UpdateCategoryDto }) {
-    try {
-      const category = await this.categoryService.update(
-        command.id,
-        command.data,
-      );
-      return {
-        status: 'success',
-        data: category,
-      };
-    } catch (error) {
-      console.log(`Failed to update category: ${error.message}`);
-      return {
-        status: 'error',
-        error: {
-          code: error.name || 'UPDATE_CATEGORY_ERROR',
-          message: error.message,
-        },
-      };
-    }
-  }
+  // @MessagePattern('ms.category.update')
+  // async updateCategory(command: { id: string; data: UpdateCategoryDto }) {
+  //   try {
+  //     const category = await this.categoryService.update(command.id, command.data);
+  //     return { status: 'success', data: category };
+  //   } catch (error) {
+  //     console.log(`Failed to update category: ${error.message}`);
+  //     return {
+  //       status: 'error',
+  //       error: { code: error.name || 'UPDATE_CATEGORY_ERROR', message: error.message },
+  //     };
+  //   }
+  // }
 
   @MessagePattern('ms.category.delete')
   async deleteCategory(command: { id: string }) {
@@ -177,10 +194,7 @@ export class ProductServiceController {
       const category = await this.categoryService.remove(command.id);
       return {
         status: 'success',
-        data: {
-          message: 'Category deleted successfully',
-          category,
-        },
+        data: { message: 'Category deleted successfully', category },
       };
     } catch (error) {
       console.log(`Failed to delete category: ${error.message}`);
@@ -193,15 +207,13 @@ export class ProductServiceController {
       };
     }
   }
+
   @MessagePattern('ms.category.getDirectChildren')
   async getDirectChildren(query: { parentId?: string }) {
     try {
       const parentId = query.parentId || null;
       const result = await this.categoryService.getDirectChildren(parentId);
-      return {
-        status: 'success',
-        data: result,
-      };
+      return { status: 'success', data: result };
     } catch (error) {
       console.log(`Failed to get category children: ${error.message}`);
       return {
