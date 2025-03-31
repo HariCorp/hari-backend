@@ -8,6 +8,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
+import { AiModule } from './ai/ai.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { CategoryModule } from './category/category.module';
     AuthModule,
     ProductModule,
     CategoryModule,
+    AiModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],

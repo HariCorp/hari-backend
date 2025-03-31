@@ -61,10 +61,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.order.created',
     'ms.payment.completed',
 
-    // Error and retry topics
-    'ms.error',
-    'ms.retry',
-    'ms.dead-letter',
+    'ms.apiKey.create',
   ];
 
   // Track subscribed topics and connected status

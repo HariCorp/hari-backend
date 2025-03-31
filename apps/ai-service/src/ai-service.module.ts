@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CommonModule } from '@app/common';
+import { ApiKey, ApiKeySchema } from '../schemas/api-key.schema';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { CommonModule } from '@app/common';
       }),
       inject: [ConfigService],
     }),
-
+    MongooseModule.forFeature([{ name: ApiKey.name, schema: ApiKeySchema }]),
     CommonModule,
   ],
   controllers: [AiServiceController],
