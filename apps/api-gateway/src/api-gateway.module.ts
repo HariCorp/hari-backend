@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
 import { AiModule } from './ai/ai.module';
-import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [

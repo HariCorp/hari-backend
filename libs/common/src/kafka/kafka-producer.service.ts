@@ -62,6 +62,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.payment.completed',
 
     'ms.apiKey.create',
+    'ms.ai.getCompletion',
   ];
 
   // Track subscribed topics and connected status
