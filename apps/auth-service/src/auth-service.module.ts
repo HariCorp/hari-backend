@@ -7,7 +7,10 @@ import { CommonModule } from '@app/common';
 
 import { AuthServiceService } from './auth-service.service';
 import { AuthServiceController } from './auth-service.controller';
-import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token.schema';
+import {
+  RefreshToken,
+  RefreshTokenSchema,
+} from './schemas/refresh-token.schema';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
@@ -18,7 +21,7 @@ import { JwtModule } from '@nestjs/jwt';
       isGlobal: false,
       ignoreEnvFile: false,
     }),
-    
+
     // Đăng ký Kafka client
     ClientsModule.registerAsync([
       {
@@ -28,18 +31,23 @@ import { JwtModule } from '@nestjs/jwt';
           transport: Transport.KAFKA,
           options: {
             client: {
-              clientId: configService.get('SERVICE_NAME', 'auth-service-client'),
-              brokers: configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(','),
+              clientId: configService.get('SERVICE_NAME', 'auth-service'),
+              brokers: configService
+                .get<string>('KAFKA_BROKERS', 'localhost:9092')
+                .split(','),
             },
             consumer: {
-              groupId: configService.get<string>('KAFKA_GROUP_ID', 'auth-service-group-client'),
+              groupId: configService.get<string>(
+                'KAFKA_GROUP_ID',
+                'auth-service-group',
+              ),
             },
           },
         }),
         inject: [ConfigService],
       },
     ]),
-    
+
     // Kết nối MongoDB
     MongooseModule.forRootAsync({
       useFactory: async (configService: ConfigService) => ({
@@ -47,20 +55,28 @@ import { JwtModule } from '@nestjs/jwt';
       }),
       inject: [ConfigService],
     }),
-    
+
     // Đăng ký schema
     MongooseModule.forFeature([
       { name: RefreshToken.name, schema: RefreshTokenSchema },
     ]),
-    
+
     // Cấu hình JWT
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
-        const expiresIn = configService.get<number>('JWT_ACCESS_EXPIRATION', 3600);
-        
-        console.log('Auth Service JWT settings - Secret:', !!secret, 'ExpiresIn:', expiresIn);
-        
+        const expiresIn = configService.get<number>(
+          'JWT_ACCESS_EXPIRATION',
+          3600,
+        );
+
+        console.log(
+          'Auth Service JWT settings - Secret:',
+          !!secret,
+          'ExpiresIn:',
+          expiresIn,
+        );
+
         return {
           secret: secret,
           signOptions: {
@@ -70,7 +86,7 @@ import { JwtModule } from '@nestjs/jwt';
       },
       inject: [ConfigService],
     }),
-    
+
     // Common module
     CommonModule,
   ],
