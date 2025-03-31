@@ -108,16 +108,16 @@ export class ProductServiceService {
           filterQuery.tags = { $regex: tags, $options: 'i' };
         }
       }
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        filterQuery.price = {};
-        if (minPrice !== undefined) filterQuery.price.$gte = Number(minPrice);
-        if (maxPrice !== undefined) filterQuery.price.$lte = Number(maxPrice);
-      }
-      if (minDiscountPercentage !== undefined) {
-        filterQuery.discountPercentage = {
-          $gte: Number(minDiscountPercentage),
-        };
-      }
+      // if (minPrice !== undefined || maxPrice !== undefined) {
+      //   filterQuery.price = {};
+      //   if (minPrice !== undefined) filterQuery.price.$gte = Number(minPrice);
+      //   if (maxPrice !== undefined) filterQuery.price.$lte = Number(maxPrice);
+      // }
+      // if (minDiscountPercentage !== undefined) {
+      //   filterQuery.discountPercentage = {
+      //     $gte: Number(minDiscountPercentage),
+      //   };
+      // }
       if (hasStock !== undefined) {
         filterQuery.stock = hasStock ? { $gt: 0 } : { $gte: 0 };
       }
