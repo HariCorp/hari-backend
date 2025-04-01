@@ -10,10 +10,7 @@ import { ProductCreatedEvent } from '@app/common/dto/product/product-created.eve
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  Product,
-  ProductDocument,
-} from 'apps/api-gateway/src/product/schemas/product.schema';
+import { Product, ProductDocument } from '@app/common/schemas/product.schema';
 import { FilterQuery, Types } from 'mongoose';
 import { Model } from 'mongoose';
 

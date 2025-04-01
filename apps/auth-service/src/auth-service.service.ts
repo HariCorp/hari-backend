@@ -4,12 +4,12 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserDto, KafkaProducerService } from '@app/common';
+import { CreateUserDto, KafkaProducerService, IAuthService } from '@app/common';
 import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
-export class AuthServiceService {
+export class AuthServiceService implements IAuthService {
   private readonly logger = new Logger(AuthServiceService.name);
 
   constructor(
@@ -577,5 +577,21 @@ export class AuthServiceService {
    */
   private async hashToken(token: string): Promise<string> {
     return await bcrypt.hash(token, 10);
+  }
+
+  async validateRefreshToken(userId: string, refreshToken: string): Promise<boolean> {
+    try {
+      const hashedToken = await this.hashToken(refreshToken);
+      const tokenDoc = await this.refreshTokenModel.findOne({
+        userId,
+        token: hashedToken,
+        isRevoked: false,
+        expiresAt: { $gt: new Date() },
+      });
+      return !!tokenDoc;
+    } catch (error) {
+      this.logger.error(`Token validation failed: ${error.message}`);
+      return false;
+    }
   }
 }

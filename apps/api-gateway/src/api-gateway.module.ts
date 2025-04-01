@@ -4,11 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ApiGatewayController } from './api-gateway.controller';
 import { CommonModule } from '@app/common';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
-import { ProductModule } from './product/product.module';
-import { CategoryModule } from './category/category.module';
-import { AiModule } from './ai/ai.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -42,11 +38,15 @@ import { AiModule } from './ai/ai.module';
         inject: [ConfigService],
       },
     ]),
-    UserModule,
-    AuthModule,
-    ProductModule,
-    CategoryModule,
-    AiModule,
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRATION', '1h'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],

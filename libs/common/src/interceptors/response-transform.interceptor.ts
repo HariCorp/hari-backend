@@ -1,4 +1,4 @@
-// apps/api-gateway/src/interceptors/response-transform.interceptor.ts
+// libs/common/src/interceptors/response-transform.interceptor.ts
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, HttpException, HttpStatus } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';

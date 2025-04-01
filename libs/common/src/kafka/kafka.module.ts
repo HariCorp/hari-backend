@@ -58,7 +58,11 @@ export class KafkaModule {
     };
   }
 
-  static forRootAsync(options: KafkaModuleAsyncOptions): DynamicModule {
+  static forRootAsync(options: {
+    imports?: any[];
+    useFactory: (...args: any[]) => KafkaModuleOptions;
+    inject?: any[];
+  }): DynamicModule {
     return {
       module: KafkaModule,
       imports: [
@@ -68,41 +72,18 @@ export class KafkaModule {
           {
             name: 'KAFKA_CLIENT',
             imports: options.imports || [],
-            useFactory: async (...args) => {
-              const kafkaOptions = await options.useFactory(...args);
+            useFactory: (...args: any[]) => {
+              const config = options.useFactory(...args);
               return {
                 transport: Transport.KAFKA,
                 options: {
                   client: {
-                    clientId: kafkaOptions.clientId,
-                    brokers: kafkaOptions.brokers,
-                    ssl: kafkaOptions.ssl,
-                    sasl: kafkaOptions.sasl,
-                    connectionTimeout: 3000, // 3 seconds
-                    retry: {
-                      initialRetryTime: 100,
-                      retries: 8,
-                      maxRetryTime: 30000, // 30 seconds max retry time
-                      factor: 2, // Exponential backoff factor
-                      multiplier: 1.5 // Incremental backoff
-                    }
+                    clientId: config.clientId,
+                    brokers: config.brokers,
+                    ssl: config.ssl,
                   },
                   consumer: {
-                    groupId: kafkaOptions.groupId,
-                    sessionTimeout: 30000, // 30 seconds
-                    rebalanceTimeout: 60000, // 60 seconds
-                    heartbeatInterval: 3000, // 3 seconds
-                    allowAutoTopicCreation: true,
-                    maxBytesPerPartition: 1048576, // 1MB
-                    maxWaitTimeInMs: 5000 // 5 seconds
-                  },
-                  producer: {
-                    allowAutoTopicCreation: true,
-                    idempotent: true, // Ensures exactly-once delivery
-                    maxInFlightRequests: 5,
-                    transactionalId: `${kafkaOptions.clientId}-transactional`,
-                    // Compression helps with larger messages and network efficiency
-                    compression: 'gzip' // Options: none, gzip, snappy, lz4
+                    groupId: config.groupId,
                   },
                 },
               };

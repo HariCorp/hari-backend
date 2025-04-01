@@ -1,10 +1,10 @@
 // apps/api-gateway/src/auth/strategies/jwt-refresh.strategy.ts
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { AuthService } from '../auth.service';
+import { IAuthService, AUTH_SERVICE } from '../interfaces/auth.interface';
 import { JwtStrategy } from './jwt.strategy';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   private readonly logger = new Logger(JwtStrategy.name);
   constructor(
     private readonly configService: ConfigService,
-    private readonly authService: AuthService,
+    @Inject(AUTH_SERVICE) private readonly authService: IAuthService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -33,9 +33,10 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       throw new UnauthorizedException('Refresh token not found');
     }
 
-    // Có thể thêm logic kiểm tra refreshToken nếu cần
-    // Ví dụ: kiểm tra trong database qua authService
-    // await this.authService.validateRefreshToken(payload.sub, refreshToken);
+    const isValid = await this.authService.validateRefreshToken(payload.sub, refreshToken);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
     return {
       userId: payload.sub,

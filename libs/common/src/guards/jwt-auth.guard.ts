@@ -1,8 +1,12 @@
 // apps/api-gateway/src/auth/guards/jwt-auth.guard.ts
-import { Injectable, UnauthorizedException, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ExecutionContext,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from '../ constansts';
+import { IS_PUBLIC_KEY } from '../constants/constants';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -31,7 +35,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       const req = context.switchToHttp().getRequest();
       if (req && req.headers) {
         console.log('Authorization header:', req.headers.authorization);
-        
+
         // If there's a token, print part of it for checking
         if (req.headers.authorization) {
           const token = req.headers.authorization.split(' ')[1];

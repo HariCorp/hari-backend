@@ -4,15 +4,9 @@ import { ProductServiceService } from './product-service.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule } from '@nestjs/microservices';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  Product,
-  ProductSchema,
-} from 'apps/api-gateway/src/product/schemas/product.schema';
+import { Product, ProductSchema } from '@app/common/schemas/product.schema';
 import { CommonModule } from '@app/common';
-import {
-  Category,
-  CategorySchema,
-} from 'apps/api-gateway/src/product/schemas/category.schema';
+import { Category, CategorySchema } from '@app/common/schemas/category.schema';
 import { CategoryService } from './category-service.service';
 
 @Module({

@@ -10,7 +10,7 @@ import { Model, Types } from 'mongoose';
 import {
   Category,
   CategoryDocument,
-} from 'apps/api-gateway/src/product/schemas/category.schema';
+} from '@app/common/schemas/category.schema';
 import { CreateCategoryDto } from '@app/common/dto/product/create-category.dto';
 import { UpdateCategoryDto } from '@app/common/dto/product/update-category.dto';
 
