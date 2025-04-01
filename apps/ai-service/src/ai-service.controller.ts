@@ -133,4 +133,120 @@ export class AiServiceController {
       };
     }
   }
+  @MessagePattern('ms.promptSchema.create')
+  async createPromptSchema(command: any) {
+    this.logger.log(
+      `Received create prompt schema request: ${JSON.stringify(command.data.name)}`,
+    );
+
+    try {
+      const promptSchema = await this.aiServiceService.createPromptSchema(
+        command.data,
+      );
+
+      return {
+        status: 'success',
+        data: promptSchema,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to create prompt schema: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code: 'PROMPT_SCHEMA_CREATION_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.promptSchema.findAll')
+  async findAllPromptSchemas(query: any = {}) {
+    this.logger.log(
+      `Received find all prompt schemas request with filter: ${JSON.stringify(query.filter || {})}`,
+    );
+
+    try {
+      const result = await this.aiServiceService.findAllPromptSchemas(
+        query.filter,
+      );
+
+      return {
+        status: 'success',
+        data: result,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to find prompt schemas: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code: 'PROMPT_SCHEMA_FETCH_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.promptSchema.findById')
+  async findPromptSchemaById(query: { id: string }) {
+    this.logger.log(`Received find prompt schema request with ID: ${query.id}`);
+
+    try {
+      const promptSchema = await this.aiServiceService.findPromptSchemaById(
+        query.id,
+      );
+
+      return {
+        status: 'success',
+        data: promptSchema,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to find prompt schema by ID: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code:
+            error.name === 'NotFoundException'
+              ? 'PROMPT_SCHEMA_NOT_FOUND'
+              : 'PROMPT_SCHEMA_FETCH_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.promptSchema.update')
+  async updatePromptSchema(command: { id: string; data: any }) {
+    this.logger.log(
+      `Received update prompt schema request for ID: ${command.id}`,
+    );
+
+    try {
+      const promptSchema = await this.aiServiceService.updatePromptSchema(
+        command.id,
+        command.data,
+      );
+
+      return {
+        status: 'success',
+        data: promptSchema,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update prompt schema: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code:
+            error.name === 'NotFoundException'
+              ? 'PROMPT_SCHEMA_NOT_FOUND'
+              : 'PROMPT_SCHEMA_UPDATE_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
 }

@@ -9,6 +9,7 @@ import {
 } from '../schemas/api-key.schema';
 import { Model } from 'mongoose';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Prompt, PromptDocument } from '../schemas/prompt.schema';
 
 @Injectable()
 export class AiServiceService {
@@ -16,6 +17,7 @@ export class AiServiceService {
 
   constructor(
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
+    @InjectModel(Prompt.name) private promptModel: Model<PromptDocument>,
   ) {}
 
   /**
@@ -242,6 +244,155 @@ export class AiServiceService {
       );
     } catch (error) {
       this.logger.error(`Lỗi khi cập nhật thống kê API key: ${error.message}`);
+    }
+  }
+  async createPromptSchema(
+    createPromptSchemaDto: any,
+  ): Promise<PromptDocument> {
+    this.logger.log(`Creating prompt schema: ${createPromptSchemaDto.name}`);
+    try {
+      const promptSchema = await this.promptModel.create({
+        ...createPromptSchemaDto,
+        lastUpdated: new Date(),
+      });
+
+      this.logger.log(
+        `Successfully created prompt schema: ${promptSchema._id}`,
+      );
+      return promptSchema;
+    } catch (error) {
+      this.logger.error(`Failed to create prompt schema: ${error.message}`);
+      throw new Error(`Failed to create prompt schema: ${error.message}`);
+    }
+  }
+
+  async findAllPromptSchemas(
+    filter: any = {},
+  ): Promise<{ promptSchemas: PromptDocument[]; total: number }> {
+    try {
+      const query: any = {};
+
+      if (filter.name) {
+        query.name = { $regex: filter.name, $options: 'i' };
+      }
+
+      const [promptSchemas, total] = await Promise.all([
+        this.promptModel.find(query).sort({ lastUpdated: -1 }).exec(),
+        this.promptModel.countDocuments(query),
+      ]);
+
+      return { promptSchemas, total };
+    } catch (error) {
+      this.logger.error(`Failed to fetch prompt schemas: ${error.message}`);
+      throw new Error(`Failed to fetch prompt schemas: ${error.message}`);
+    }
+  }
+
+  async findPromptSchemaById(id: string): Promise<PromptDocument> {
+    try {
+      const promptSchema = await this.promptModel.findById(id).exec();
+
+      if (!promptSchema) {
+        throw new NotFoundException(`Prompt schema with ID ${id} not found`);
+      }
+
+      return promptSchema;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to fetch prompt schema: ${error.message}`);
+      throw new Error(`Failed to fetch prompt schema: ${error.message}`);
+    }
+  }
+
+  async updatePromptSchema(
+    id: string,
+    updatePromptSchemaDto: any,
+  ): Promise<PromptDocument> {
+    try {
+      const updatedPromptSchema = await this.promptModel
+        .findByIdAndUpdate(
+          id,
+          {
+            ...updatePromptSchemaDto,
+            lastUpdated: new Date(),
+          },
+          { new: true },
+        )
+        .exec();
+
+      if (!updatedPromptSchema) {
+        throw new NotFoundException(`Prompt schema with ID ${id} not found`);
+      }
+
+      return updatedPromptSchema;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update prompt schema: ${error.message}`);
+      throw new Error(`Failed to update prompt schema: ${error.message}`);
+    }
+  }
+
+  async updateTimeMetrics(
+    id: string,
+    timeField: string,
+    metricsData: any,
+  ): Promise<PromptDocument> {
+    try {
+      // Kiểm tra xem timeField có phải là một trong các trường thời gian hợp lệ không
+      const validTimeFields = [
+        'todayInfo',
+        'yesterdayInfo',
+        'weekInfo',
+        'monthInfo',
+      ];
+      if (!validTimeFields.includes(timeField)) {
+        throw new Error(`Invalid time field: ${timeField}`);
+      }
+
+      // Tạo đối tượng cập nhật
+      const updateObj: any = {};
+      updateObj[timeField] = metricsData;
+      updateObj.lastUpdated = new Date();
+
+      const updatedPromptSchema = await this.promptModel
+        .findByIdAndUpdate(id, { $set: updateObj }, { new: true })
+        .exec();
+
+      if (!updatedPromptSchema) {
+        throw new NotFoundException(`Prompt schema with ID ${id} not found`);
+      }
+
+      return updatedPromptSchema;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update ${timeField}: ${error.message}`);
+      throw new Error(`Failed to update ${timeField}: ${error.message}`);
+    }
+  }
+
+  async removePromptSchema(id: string): Promise<PromptDocument> {
+    try {
+      const deletedPromptSchema = await this.promptModel
+        .findByIdAndDelete(id)
+        .exec();
+
+      if (!deletedPromptSchema) {
+        throw new NotFoundException(`Prompt schema with ID ${id} not found`);
+      }
+
+      return deletedPromptSchema;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to delete prompt schema: ${error.message}`);
+      throw new Error(`Failed to delete prompt schema: ${error.message}`);
     }
   }
 
