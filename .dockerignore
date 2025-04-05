@@ -3,5 +3,10 @@ npm-debug.log
 dist
 coverage
 .git
+.github
+.vscode
+.idea
 .env
+*.md
+!README.md
 .DS_Store
