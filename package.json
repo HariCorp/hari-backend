@@ -20,7 +20,10 @@
     "test:e2e": "jest --config ./apps/nest-microservices-kafka/test/jest-e2e.json",
     "docker:up": "docker-compose -f docker/development/docker-compose.yml up -d",
     "docker:down": "docker-compose -f docker/development/docker-compose.yml down",
-    "docker:logs": "docker-compose -f docker/development/docker-compose.yml logs -f"
+    "docker:logs": "docker-compose -f docker/development/docker-compose.yml logs -f",
+    "start:upload": "nest start upload-service",
+    "start:upload:dev": "nest start upload-service --watch",
+    "start:upload:debug": "nest start upload-service --debug --watch"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -40,6 +43,7 @@
     "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "kafkajs": "^2.2.4",

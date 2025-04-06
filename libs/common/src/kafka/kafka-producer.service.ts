@@ -63,6 +63,11 @@ export class KafkaProducerService implements OnModuleInit {
 
     'ms.apiKey.create',
     'ms.ai.getCompletion',
+
+    // File service topics
+    'ms.file.upload',
+    'ms.file.delete',
+    'ms.file.getById',
   ];
 
   // Track subscribed topics and connected status

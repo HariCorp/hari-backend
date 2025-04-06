@@ -1,24 +1,20 @@
 import { Module } from '@nestjs/common';
-import { ApiGatewayService } from './api-gateway.service';
+import { UploadController } from './upload.controller';
+import { UploadService } from './upload.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ApiGatewayController } from './api-gateway.controller';
+import { MongooseModule } from '@nestjs/mongoose';
 import { CommonModule } from '@app/common';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
-import { ProductModule } from './product/product.module';
-import { CategoryModule } from './category/category.module';
-import { AiModule } from './ai/ai.module';
-import { UploadModule } from './upload/upload.module';
+import { UploadedFile, UploadedFileSchema } from '../schemas/uploaded-file.schema';
 
 @Module({
   imports: [
-    CommonModule,
     ConfigModule.forRoot({
-      envFilePath: './apps/api-gateway/.env',
-      isGlobal: true,
+      envFilePath: ['apps/upload-service/.env'],
+      isGlobal: false,
       ignoreEnvFile: false,
     }),
+
     ClientsModule.registerAsync([
       {
         name: 'KAFKA_CLIENT',
@@ -27,7 +23,7 @@ import { UploadModule } from './upload/upload.module';
           transport: Transport.KAFKA,
           options: {
             client: {
-              clientId: configService.get('SERVICE_NAME', 'api-gateway-client'),
+              clientId: configService.get('SERVICE_NAME', 'upload-service'),
               brokers: configService
                 .get<string>('KAFKA_BROKERS', 'localhost:9092')
                 .split(','),
@@ -35,7 +31,7 @@ import { UploadModule } from './upload/upload.module';
             consumer: {
               groupId: configService.get<string>(
                 'KAFKA_GROUP_ID',
-                'api-gateway-consumer-group',
+                'upload-service-group',
               ),
             },
           },
@@ -43,14 +39,18 @@ import { UploadModule } from './upload/upload.module';
         inject: [ConfigService],
       },
     ]),
-    UserModule,
-    AuthModule,
-    ProductModule,
-    CategoryModule,
-    AiModule,
-    UploadModule,
+    MongooseModule.forRootAsync({
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
+    }),
+    MongooseModule.forFeature([
+      { name: UploadedFile.name, schema: UploadedFileSchema },
+    ]),
+    CommonModule,
   ],
-  controllers: [ApiGatewayController],
-  providers: [ApiGatewayService],
+  controllers: [UploadController],
+  providers: [UploadService],
 })
-export class ApiGatewayModule {}
+export class UploadModule {} 
