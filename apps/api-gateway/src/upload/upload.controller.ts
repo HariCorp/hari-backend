@@ -1,3 +1,4 @@
+// apps/api-gateway/src/upload/upload.controller.ts
 import {
   Controller,
   Post,
@@ -11,13 +12,15 @@ import {
   HttpStatus,
   ValidationPipe,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RBAC, RolesGuard } from '@app/common';
 import { FileType } from 'apps/upload-service/schemas/uploaded-file.schema';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('upload')
 export class UploadController {
@@ -26,37 +29,46 @@ export class UploadController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @RBAC('create', 'file', 'any')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FilesInterceptor('files'))
   async uploadFile(
-    @UploadedFile() file,
-    @Body('folder') folder?: string,
+    @UploadedFiles() files,
+    @Body('service') service?: string, // Đổi từ folder thành service
     @Body('fileType') fileType?: FileType,
+    @CurrentUser() user?: any, // Lấy thông tin người dùng từ JWT
   ) {
     try {
-      if (!file) {
+      if (!files || files.length === 0) {
         throw new HttpException('Không tìm thấy file', HttpStatus.BAD_REQUEST);
       }
 
-      // Đọc file buffer và chuyển sang base64
-      const buffer = file.buffer.toString('base64');
-
       // Xác định loại file từ mimetype nếu không được chỉ định
-      const detectedFileType = fileType || this.detectFileType(file.mimetype);
+      // Kiểm tra xem service có hợp lệ không
+      const serviceFolder = this.validateServiceFolder(service);
 
-      // Gọi service để upload file
-      const result = await this.uploadService.uploadFile({
-        fileName: file.originalname,
-        originalName: file.originalname,
-        buffer: buffer,
-        fileType: detectedFileType,
-        size: file.size,
-        mimeType: file.mimetype,
-        folder,
+      // Xử lý upload nhiều file
+      const uploadPromises = files.map(file => {
+        // Đọc file buffer và chuyển sang base64
+        const buffer = file.buffer.toString('base64');
+        const detectedFileType = fileType || this.detectFileType(file.mimetype);
+
+        return this.uploadService.uploadFile({
+          fileName: file.originalname,
+          originalName: file.originalname,
+          buffer: buffer,
+          fileType: detectedFileType,
+          size: file.size,
+          mimeType: file.mimetype,
+          userId: user?.userId, // Lấy userId từ thông tin người dùng
+          folder: serviceFolder, // Sử dụng service folder đã xác thực
+        });
       });
+
+      // Đợi tất cả các file đều được upload
+      const results = await Promise.all(uploadPromises);
 
       return {
         status: 'success',
-        data: result,
+        data: results,
       };
     } catch (error) {
       throw new HttpException(
@@ -96,14 +108,33 @@ export class UploadController {
   async getFiles(
     @Query('userId') userId?: string,
     @Query('fileType') fileType?: FileType,
-    @Query('folder') folder?: string,
+    @Query('service') service?: string, // Đổi từ folder thành service
+    @CurrentUser() user?: any, // Lấy thông tin người dùng từ JWT
   ) {
     try {
+      // Xác thực quyền: Chỉ ADMIN mới có thể xem files của người khác
+      if (userId && userId !== user.userId && !this.isAdmin(user)) {
+        throw new HttpException(
+          'Không có quyền xem files của người dùng khác',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      // Nếu không chỉ định userId, mặc định lấy userId của người dùng hiện tại (trừ khi là admin)
+      const effectiveUserId =
+        userId || (this.isAdmin(user) ? undefined : user.userId);
+
+      // Xác định service folder
+      const serviceFolder = service
+        ? this.validateServiceFolder(service)
+        : undefined;
+
       const files = await this.uploadService.findAllFiles({
-        userId,
+        userId: effectiveUserId,
         fileType,
-        folder,
+        folder: serviceFolder,
       });
+
       return {
         status: 'success',
         data: files,
@@ -119,6 +150,49 @@ export class UploadController {
     }
   }
 
+  /**
+   * Kiểm tra xem người dùng có phải là admin không
+   */
+  private isAdmin(user: any): boolean {
+    return (
+      user?.roles?.includes('admin') || user?.roles?.includes('super_admin')
+    );
+  }
+
+  /**
+   * Xác thực và chuẩn hóa tên service
+   */
+  private validateServiceFolder(service?: string): string {
+    if (!service) {
+      return 'general'; // Mặc định nếu không chỉ định
+    }
+
+    // Danh sách các service hợp lệ
+    const validServices = [
+      'products',
+      'users',
+      'categories',
+      'profiles',
+      'general',
+    ];
+
+    // Chuẩn hóa service name
+    const normalizedService = service.toLowerCase().trim();
+
+    // Kiểm tra xem service có hợp lệ không
+    if (!validServices.includes(normalizedService)) {
+      throw new HttpException(
+        `Service không hợp lệ. Các service hợp lệ: ${validServices.join(', ')}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return normalizedService;
+  }
+
+  /**
+   * Xác định loại file dựa vào MIME type
+   */
   private detectFileType(mimeType: string): FileType {
     if (mimeType.startsWith('image/')) {
       return FileType.IMAGE;
@@ -130,4 +204,4 @@ export class UploadController {
       return FileType.DOCUMENT;
     }
   }
-} 
+}

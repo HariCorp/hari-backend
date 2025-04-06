@@ -1,3 +1,4 @@
+// apps/upload-service/dto/upload-file.dto.ts
 import { Command } from '@app/common';
 import {
   IsEnum,
@@ -37,7 +38,7 @@ export class UploadFileDto {
 
   @IsOptional()
   @IsString()
-  folder?: string;
+  folder?: string; // Được sử dụng để chỉ định tên service (products, users, etc.)
 
   @IsOptional()
   metadata?: Record<string, any>;
@@ -50,4 +51,4 @@ export class UploadFileCommand extends Command {
   ) {
     super(metadata);
   }
-} 
+}

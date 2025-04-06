@@ -67,7 +67,7 @@ export class KafkaProducerService implements OnModuleInit {
     // File service topics
     'ms.file.upload',
     'ms.file.delete',
-    'ms.file.getById',
+    'ms.file.findAll',
   ];
 
   // Track subscribed topics and connected status
