@@ -1,5 +1,12 @@
 // libs/common/src/dto/product/create-category.dto.ts
-import { IsString, IsOptional, IsMongoId, IsNumber, IsBoolean, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsMongoId,
+  IsNumber,
+  IsBoolean,
+  IsUrl,
+} from 'class-validator';
 import { Types } from 'mongoose';
 
 export class CreateCategoryDto {
@@ -7,8 +14,7 @@ export class CreateCategoryDto {
   name: string;
 
   @IsString()
-  @IsOptional()
-  description?: string;
+  description: string;
 
   @IsMongoId()
   @IsOptional()
@@ -19,14 +25,12 @@ export class CreateCategoryDto {
   slug?: string;
 
   @IsNumber()
-  @IsOptional()
-  order?: number;
+  order: number;
 
   @IsBoolean()
   @IsOptional()
   isActive?: boolean = true;
 
   @IsUrl()
-  @IsOptional()
-  imageUrl?: string;
+  imageUrl: string;
 }
