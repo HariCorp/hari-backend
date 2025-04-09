@@ -73,8 +73,7 @@ export class CreateProductDto {
   @IsString({ each: true, message: 'Mỗi URL ảnh phải là chuỗi' })
   @ArrayMaxSize(5, { message: 'Không được upload quá 5 ảnh' })
   @Matches(/^https?:\/\/.+$/, { each: true, message: 'Ảnh phải là URL hợp lệ' })
-  @IsOptional()
-  images?: string[] = [];
+  images: string[] = [];
 
   @IsBoolean()
   @IsOptional()
