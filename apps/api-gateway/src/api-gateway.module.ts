@@ -10,6 +10,7 @@ import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
 import { AiModule } from './ai/ai.module';
 import { UploadModule } from './upload/upload.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { UploadModule } from './upload/upload.module';
     CategoryModule,
     AiModule,
     UploadModule,
+    CartModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],

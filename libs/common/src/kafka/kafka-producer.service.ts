@@ -68,6 +68,14 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.file.upload',
     'ms.file.delete',
     'ms.file.findAll',
+
+    //Cart service topics
+    'ms.cart.findUserCart',
+    'ms.cart.addItem',
+    'ms.cart.removeItem',
+    'ms.cart.updateItem',
+    'ms.cart.clearCart',
+    'ms.cart.findById',
   ];
 
   // Track subscribed topics and connected status

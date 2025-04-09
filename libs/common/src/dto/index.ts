@@ -7,3 +7,7 @@ export * from './product/create-product.dto';
 export * from './product/update-product.dto';
 export * from './product/filter-product.dto';
 export * from './product/product-response.dto';
+export * from './cart/create-cart-item.dto';
+export * from './cart/update-cart-item.dto';
+export * from './cart/filter-cart.dto';
+export * from './cart/cart-item-created.event';
