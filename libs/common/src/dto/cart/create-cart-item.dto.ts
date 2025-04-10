@@ -28,6 +28,18 @@ export class CreateCartItemDto {
   @IsOptional()
   note?: string;
 
+  @IsString()
+  @IsOptional()
+  productName?: string;
+
+  @IsNumber()
+  @IsOptional()
+  productPrice?: number;
+
+  @IsString()
+  @IsOptional()
+  productImage?: string;
+
   constructor(partial: Partial<CreateCartItemDto>) {
     Object.assign(this, partial);
   }
@@ -40,4 +52,4 @@ export class CreateCartItemCommand extends Command {
   ) {
     super(metadata);
   }
-} 
+}

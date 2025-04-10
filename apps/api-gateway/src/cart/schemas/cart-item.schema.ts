@@ -6,7 +6,7 @@ export type CartItemDocument = HydratedDocument<CartItem>;
 
 @Schema({ timestamps: true })
 export class CartItem {
-  @Prop({ required: true, type: Types.ObjectId, ref: 'Product' })
+  @Prop({ required: true, type: Types.ObjectId })
   productId: Types.ObjectId;
 
   @Prop({ required: true, type: Number, min: 1 })
@@ -18,13 +18,13 @@ export class CartItem {
   @Prop({ type: String })
   note?: string;
 
-  // We'll store product details at the time of adding to cart
+  // Store product details at the time of adding to cart
   // This helps if product details change later
-  @Prop({ type: String })
-  productName?: string;
+  @Prop({ type: String, required: true })
+  productName: string;
 
-  @Prop({ type: Number })
-  productPrice?: number;
+  @Prop({ type: Number, required: true })
+  productPrice: number;
 
   @Prop({ type: String })
   productImage?: string;
@@ -54,4 +54,4 @@ CartItemSchema.set('toObject', {
 // Create indexes for common queries
 CartItemSchema.index({ userId: 1 });
 CartItemSchema.index({ productId: 1 });
-CartItemSchema.index({ userId: 1, productId: 1 }, { unique: true }); 
+CartItemSchema.index({ userId: 1, productId: 1 }, { unique: true });

@@ -24,19 +24,53 @@ export class CartService {
   async addToCart(createCartItemDto: CreateCartItemDto, user: any) {
     createCartItemDto.userId = new Types.ObjectId(user.userId);
 
-    const command = {
-      data: createCartItemDto,
-      metadata: {
-        id: `api-${Date.now()}`,
-        correlationId: `api-${Date.now()}`,
-        timestamp: Date.now(),
-        source: 'api-gateway',
-        type: 'command',
-        user,
-      },
-    };
-
     try {
+      // First, get product details from product-service via Kafka
+      const productQuery = {
+        data: createCartItemDto.productId.toString(),
+        metadata: {
+          id: `api-${Date.now()}`,
+          correlationId: `api-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'api-gateway',
+          type: 'query',
+          user,
+        },
+      };
+
+      const productResponse = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.product.findById',
+        productQuery,
+      );
+
+      if (productResponse.status === 'error') {
+        throw new BadRequestException(
+          productResponse.error.message || 'Failed to get product details',
+        );
+      }
+
+      const product = productResponse.data;
+
+      // Add product details to createCartItemDto
+      createCartItemDto.productName = product.name;
+      createCartItemDto.productPrice = product.price;
+      if (product.images && product.images.length > 0) {
+        createCartItemDto.productImage = product.images[0];
+      }
+
+      // Now send the command to cart service with product details
+      const command = {
+        data: createCartItemDto,
+        metadata: {
+          id: `api-${Date.now()}`,
+          correlationId: `api-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'api-gateway',
+          type: 'command',
+          user,
+        },
+      };
+
       this.logger.log(
         `Sending add to cart command: ${JSON.stringify(createCartItemDto)}`,
       );
@@ -58,7 +92,10 @@ export class CartService {
       return response.data;
     } catch (error) {
       this.logger.error(`Add to cart failed: ${error.message}`);
-      if (error instanceof ConflictException || error instanceof BadRequestException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException(`Add to cart failed: ${error.message}`);
@@ -78,9 +115,7 @@ export class CartService {
         },
       };
 
-      this.logger.log(
-        `Sending find user cart query for user: ${userId}`,
-      );
+      this.logger.log(`Sending find user cart query for user: ${userId}`);
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.cart.findUserCart',
         query,
@@ -117,7 +152,9 @@ export class CartService {
         },
       };
 
-      this.logger.log(`Sending find cart item query: ${id} for user: ${user.userId}`);
+      this.logger.log(
+        `Sending find cart item query: ${id} for user: ${user.userId}`,
+      );
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.cart.findById',
         query,
@@ -144,7 +181,11 @@ export class CartService {
     }
   }
 
-  async updateCartItem(id: string, updateCartItemDto: UpdateCartItemDto, user: any) {
+  async updateCartItem(
+    id: string,
+    updateCartItemDto: UpdateCartItemDto,
+    user: any,
+  ) {
     try {
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid cart item ID format');
@@ -190,7 +231,9 @@ export class CartService {
       ) {
         throw error;
       }
-      throw new BadRequestException(`Update cart item failed: ${error.message}`);
+      throw new BadRequestException(
+        `Update cart item failed: ${error.message}`,
+      );
     }
   }
 
@@ -237,7 +280,9 @@ export class CartService {
       ) {
         throw error;
       }
-      throw new BadRequestException(`Remove cart item failed: ${error.message}`);
+      throw new BadRequestException(
+        `Remove cart item failed: ${error.message}`,
+      );
     }
   }
 
@@ -274,4 +319,4 @@ export class CartService {
         : new BadRequestException(`Clear cart failed: ${error.message}`);
     }
   }
-} 
+}

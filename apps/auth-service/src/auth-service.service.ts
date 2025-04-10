@@ -1,11 +1,19 @@
 // apps/auth-service/src/auth-service.service.ts
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto, KafkaProducerService } from '@app/common';
-import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
+import {
+  RefreshToken,
+  RefreshTokenDocument,
+} from './schemas/refresh-token.schema';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -16,13 +24,19 @@ export class AuthServiceService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly kafkaProducer: KafkaProducerService,
-    @InjectModel(RefreshToken.name) private refreshTokenModel: Model<RefreshTokenDocument>,
+    @InjectModel(RefreshToken.name)
+    private refreshTokenModel: Model<RefreshTokenDocument>,
   ) {}
 
   /**
    * Authenticate a user and generate tokens
    */
-  async login(email: string, password: string, userAgent?: string, ipAddress?: string) {
+  async login(
+    email: string,
+    password: string,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
     try {
       // Verify user credentials with User Service
       const verifyResult = await this.kafkaProducer.sendAndReceive<any, any>(
@@ -38,8 +52,11 @@ export class AuthServiceService {
       }
 
       const user = verifyResult.data.user;
-      console.log("🔍 ~ login ~ apps/auth-service/src/auth-service.service.ts:40 ~ user:", user)
-      
+      console.log(
+        '🔍 ~ login ~ apps/auth-service/src/auth-service.service.ts:40 ~ user:',
+        user,
+      );
+
       // Generate tokens
       const tokens = await this.generateTokens(user);
 
@@ -63,7 +80,7 @@ export class AuthServiceService {
             username: user.username,
             email: user.email,
             roles: user.roles,
-            createdAt: user.createdAt
+            createdAt: user.createdAt,
           },
         },
       };
@@ -82,29 +99,35 @@ export class AuthServiceService {
   /**
    * Register a new user and generate tokens
    */
-  async register(userData: CreateUserDto, userAgent?: string, ipAddress?: string) {
+  async register(
+    userData: CreateUserDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
     try {
       // Create user in UserService
-      const createUserResponse = await this.kafkaProducer.sendAndReceive<any, any>(
-        'ms.user.create',
-        {
-          data: userData,
-          metadata: {
-            id: `auth-${Date.now()}`,
-            correlationId: `auth-${Date.now()}`,
-            timestamp: Date.now(),
-            source: 'auth-service',
-            type: 'command',
-          },
+      const createUserResponse = await this.kafkaProducer.sendAndReceive<
+        any,
+        any
+      >('ms.user.create', {
+        data: userData,
+        metadata: {
+          id: `auth-${Date.now()}`,
+          correlationId: `auth-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'auth-service',
+          type: 'command',
         },
-      );
+      });
 
       if (createUserResponse.status === 'error') {
         return {
           status: 'error',
           error: {
             code: 'REGISTRATION_FAILED',
-            message: createUserResponse.error.message || 'Failed to create user account',
+            message:
+              createUserResponse.error.message ||
+              'Failed to create user account',
           },
         };
       }
@@ -150,167 +173,206 @@ export class AuthServiceService {
   }
 
   /**
-     * Generate a new access token using a refresh token
-     */
-    /**
    * Generate a new access token using a refresh token
    */
-    async refreshToken(refreshTokenString: string, userAgent?: string, ipAddress?: string) {
-      try {
-        // Xác minh refreshToken là JWT hợp lệ
-        this.logger.log(`Bắt đầu quá trình refresh token`);
-        console.log("🔍 ~ refreshToken ~ refreshTokenString:", refreshTokenString);
-        
-        const payload = this.jwtService.verify(refreshTokenString, {
-          secret: this.configService.get<string>('JWT_SECRET'),
-        });
-        console.log("🔍 ~ refreshToken ~ payload:", payload);
-        this.logger.log(`JWT verified thành công cho user: ${payload.sub}`);
-    
-        // Tìm tất cả token của user chưa bị thu hồi và còn hiệu lực
-        this.logger.log(`Tìm kiếm refresh token trong database cho userId: ${payload.sub}`);
-        const refreshTokens = await this.refreshTokenModel.find({
-          userId: payload.sub,
-          isRevoked: false,
-          expiresAt: { $gt: new Date() },
-        });
-        console.log("🔍 ~ refreshToken ~ số lượng token tìm thấy:", refreshTokens.length);
-        this.logger.log(`Tìm thấy ${refreshTokens.length} token hợp lệ trong database`);
-    
-        if (refreshTokens.length === 0) {
-          this.logger.warn(`Không tìm thấy refresh token hợp lệ nào cho userId: ${payload.sub}`);
-          return {
-            status: 'error',
-            error: {
-              code: 'REFRESH_TOKEN_NOT_FOUND',
-              message: 'Không tìm thấy refresh token hợp lệ'
-            }
-          };
-        }
-    
-        // So sánh refreshTokenString với từng token trong database
-        let validTokenDoc: RefreshTokenDocument | null = null;
-        this.logger.log(`Đang so sánh token gửi lên với ${refreshTokens.length} token trong database`);
-        
-        for (let i = 0; i < refreshTokens.length; i++) {
-          const tokenDoc = refreshTokens[i];
-          console.log(`🔍 ~ refreshToken ~ đang so sánh với token#${i+1} - ID: ${tokenDoc._id}`);
-          try {
-            const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
-            console.log(`🔍 ~ refreshToken ~ token#${i+1} - isMatch:`, isMatch);
-            
-            if (isMatch) {
-              validTokenDoc = tokenDoc;
-              this.logger.log(`Tìm thấy token khớp trong database với ID: ${tokenDoc._id}`);
-              break;
-            }
-          } catch (compareError) {
-            console.error(`🔍 ~ Lỗi khi so sánh token#${i+1}:`, compareError.message);
-          }
-        }
-    
-        if (!validTokenDoc) {
-          this.logger.warn(`Không tìm thấy token khớp trong database cho userId: ${payload.sub}`);
-          return {
-            status: 'error',
-            error: {
-              code: 'INVALID_TOKEN',
-              message: 'Refresh token không hợp lệ hoặc đã hết hạn'
-            }
-          };
-        }
-    
-        // Get user details
-        this.logger.log(`Lấy thông tin user với userId: ${validTokenDoc.userId}`);
-        const userResponse = await this.kafkaProducer.sendAndReceive<any, any>(
-          'ms.user.findById',
-          { userId: validTokenDoc.userId },
+  /**
+   * Generate a new access token using a refresh token
+   */
+  async refreshToken(
+    refreshTokenString: string,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
+    try {
+      // Xác minh refreshToken là JWT hợp lệ
+      this.logger.log(`Bắt đầu quá trình refresh token`);
+      console.log(
+        '🔍 ~ refreshToken ~ refreshTokenString:',
+        refreshTokenString,
+      );
+
+      const payload = this.jwtService.verify(refreshTokenString, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+      console.log('🔍 ~ refreshToken ~ payload:', payload);
+      this.logger.log(`JWT verified thành công cho user: ${payload.sub}`);
+
+      // Tìm tất cả token của user chưa bị thu hồi và còn hiệu lực
+      this.logger.log(
+        `Tìm kiếm refresh token trong database cho userId: ${payload.sub}`,
+      );
+      const refreshTokens = await this.refreshTokenModel.find({
+        userId: payload.sub,
+        isRevoked: false,
+        expiresAt: { $gt: new Date() },
+      });
+      console.log(
+        '🔍 ~ refreshToken ~ số lượng token tìm thấy:',
+        refreshTokens.length,
+      );
+      this.logger.log(
+        `Tìm thấy ${refreshTokens.length} token hợp lệ trong database`,
+      );
+
+      if (refreshTokens.length === 0) {
+        this.logger.warn(
+          `Không tìm thấy refresh token hợp lệ nào cho userId: ${payload.sub}`,
         );
-        console.log("🔍 ~ refreshToken ~ userResponse:", JSON.stringify(userResponse, null, 2));
-    
-        if (userResponse.status === 'error' || !userResponse.data) {
-          this.logger.error(`Không thể lấy thông tin user: ${userResponse.error?.message || 'Unknown error'}`);
-          return {
-            status: 'error',
-            error: {
-              code: 'USER_NOT_FOUND',
-              message: 'Không tìm thấy thông tin người dùng',
-              details: userResponse.error
-            }
-          };
-        }
-    
-        const user = userResponse.data;
-        this.logger.log(`Đã lấy được thông tin user: ${user.username}`);
-    
-        // Generate new tokens
-        this.logger.log(`Tạo cặp token mới cho user: ${user.username}`);
-        const tokens = await this.generateTokens(user);
-        console.log("🔍 ~ refreshToken ~ accessToken mới hết hạn sau:", tokens.expiresIn, "giây");
-    
-        // Revoke old refresh token
-        this.logger.log(`Thu hồi refresh token cũ với ID: ${validTokenDoc._id}`);
-        await this.refreshTokenModel.findByIdAndUpdate(validTokenDoc._id, {
-          isRevoked: true,
-          lastUsedAt: new Date(),
-        });
-    
-        // Store new refresh token
-        this.logger.log(`Lưu refresh token mới cho user: ${user._id}`);
-        await this.storeRefreshToken(
-          tokens.refreshToken,
-          user._id.toString(),
-          userAgent,
-          ipAddress,
-        );
-        this.logger.log(`Quá trình refresh token hoàn tất thành công`);
-    
-        return {
-          status: 'success',
-          data: {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            expiresIn: tokens.expiresIn,
-            tokenType: 'Bearer',
-          },
-        };
-      } catch (error) {
-        this.logger.error(`Token refresh failed: ${error.message}`, error.stack);
-        console.error("🔍 ~ refreshToken ~ chi tiết lỗi:", {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-        
-        // Chi tiết hóa lỗi
-        if (error.name === 'TokenExpiredError') {
-          return {
-            status: 'error',
-            error: {
-              code: 'TOKEN_EXPIRED',
-              message: 'Refresh token đã hết hạn'
-            }
-          };
-        } else if (error.name === 'JsonWebTokenError') {
-          return {
-            status: 'error',
-            error: {
-              code: 'INVALID_TOKEN',
-              message: 'Refresh token không hợp lệ'
-            }
-          };
-        }
-        
         return {
           status: 'error',
           error: {
-            code: 'REFRESH_TOKEN_FAILED',
-            message: 'Không thể làm mới token',
-            details: error.message
-          }
+            code: 'REFRESH_TOKEN_NOT_FOUND',
+            message: 'Không tìm thấy refresh token hợp lệ',
+          },
         };
       }
+
+      // So sánh refreshTokenString với từng token trong database
+      let validTokenDoc: RefreshTokenDocument | null = null;
+      this.logger.log(
+        `Đang so sánh token gửi lên với ${refreshTokens.length} token trong database`,
+      );
+
+      for (let i = 0; i < refreshTokens.length; i++) {
+        const tokenDoc = refreshTokens[i];
+        console.log(
+          `🔍 ~ refreshToken ~ đang so sánh với token#${i + 1} - ID: ${tokenDoc._id}`,
+        );
+        try {
+          const isMatch = await bcrypt.compare(
+            refreshTokenString,
+            tokenDoc.token,
+          );
+          console.log(`🔍 ~ refreshToken ~ token#${i + 1} - isMatch:`, isMatch);
+
+          if (isMatch) {
+            validTokenDoc = tokenDoc;
+            this.logger.log(
+              `Tìm thấy token khớp trong database với ID: ${tokenDoc._id}`,
+            );
+            break;
+          }
+        } catch (compareError) {
+          console.error(
+            `🔍 ~ Lỗi khi so sánh token#${i + 1}:`,
+            compareError.message,
+          );
+        }
+      }
+
+      if (!validTokenDoc) {
+        this.logger.warn(
+          `Không tìm thấy token khớp trong database cho userId: ${payload.sub}`,
+        );
+        return {
+          status: 'error',
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'Refresh token không hợp lệ hoặc đã hết hạn',
+          },
+        };
+      }
+
+      // Get user details
+      this.logger.log(`Lấy thông tin user với userId: ${validTokenDoc.userId}`);
+      const userResponse = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.user.findById',
+        { userId: validTokenDoc.userId },
+      );
+      console.log(
+        '🔍 ~ refreshToken ~ userResponse:',
+        JSON.stringify(userResponse, null, 2),
+      );
+
+      if (userResponse.status === 'error' || !userResponse.data) {
+        this.logger.error(
+          `Không thể lấy thông tin user: ${userResponse.error?.message || 'Unknown error'}`,
+        );
+        return {
+          status: 'error',
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'Không tìm thấy thông tin người dùng',
+            details: userResponse.error,
+          },
+        };
+      }
+
+      const user = userResponse.data;
+      this.logger.log(`Đã lấy được thông tin user: ${user.username}`);
+
+      // Generate new tokens
+      this.logger.log(`Tạo cặp token mới cho user: ${user.username}`);
+      const tokens = await this.generateTokens(user);
+      console.log(
+        '🔍 ~ refreshToken ~ accessToken mới hết hạn sau:',
+        tokens.expiresIn,
+        'giây',
+      );
+
+      // Revoke old refresh token
+      this.logger.log(`Thu hồi refresh token cũ với ID: ${validTokenDoc._id}`);
+      await this.refreshTokenModel.findByIdAndUpdate(validTokenDoc._id, {
+        isRevoked: true,
+        lastUsedAt: new Date(),
+      });
+
+      // Store new refresh token
+      this.logger.log(`Lưu refresh token mới cho user: ${user._id}`);
+      await this.storeRefreshToken(
+        tokens.refreshToken,
+        user._id.toString(),
+        userAgent,
+        ipAddress,
+      );
+      this.logger.log(`Quá trình refresh token hoàn tất thành công`);
+
+      return {
+        status: 'success',
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn,
+          tokenType: 'Bearer',
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Token refresh failed: ${error.message}`, error.stack);
+      console.error('🔍 ~ refreshToken ~ chi tiết lỗi:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+
+      // Chi tiết hóa lỗi
+      if (error.name === 'TokenExpiredError') {
+        return {
+          status: 'error',
+          error: {
+            code: 'TOKEN_EXPIRED',
+            message: 'Refresh token đã hết hạn',
+          },
+        };
+      } else if (error.name === 'JsonWebTokenError') {
+        return {
+          status: 'error',
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'Refresh token không hợp lệ',
+          },
+        };
+      }
+
+      return {
+        status: 'error',
+        error: {
+          code: 'REFRESH_TOKEN_FAILED',
+          message: 'Không thể làm mới token',
+          details: error.message,
+        },
+      };
     }
+  }
 
   /**
    * Revoke a refresh token
@@ -340,7 +402,10 @@ export class AuthServiceService {
         },
       };
     } catch (error) {
-      this.logger.error(`Token revocation failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Token revocation failed: ${error.message}`,
+        error.stack,
+      );
       return {
         status: 'error',
         error: {
@@ -357,7 +422,7 @@ export class AuthServiceService {
   async validateToken(token: string) {
     try {
       const payload = this.jwtService.verify(token);
-      
+
       // Get user details to ensure user still exists and is active
       const userResponse = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.user.findById',
@@ -369,13 +434,13 @@ export class AuthServiceService {
           status: 'error',
           error: {
             code: 'INVALID_TOKEN',
-            message: 'Token is invalid or user doesn\'t exist',
+            message: "Token is invalid or user doesn't exist",
           },
         };
       }
 
       const user = userResponse.data;
-      
+
       // Check if user is active
       if (user.status !== 'active') {
         return {
@@ -412,34 +477,37 @@ export class AuthServiceService {
   async logout(userId: string, refreshTokenString: string) {
     try {
       this.logger.log(`Logging out user ${userId}`);
-      
+
       // Tìm tất cả refresh token chưa bị thu hồi của user
       const refreshTokens = await this.refreshTokenModel.find({
         userId,
         isRevoked: false,
         expiresAt: { $gt: new Date() },
       });
-      
+
       if (refreshTokens.length === 0) {
         this.logger.warn(`No active refresh tokens found for user ${userId}`);
         return {
           status: 'success',
-          data: { 
+          data: {
             message: 'No active sessions to logout',
-            tokensRevoked: 0
+            tokensRevoked: 0,
           },
         };
       }
-      
+
       // Kiểm tra xem refreshTokenString có khớp với bất kỳ token nào không
       let foundMatch = false;
       let revokedCount = 0;
-      
+
       for (const tokenDoc of refreshTokens) {
         try {
           // So sánh refreshTokenString với hash trong database
-          const isMatch = await bcrypt.compare(refreshTokenString, tokenDoc.token);
-          
+          const isMatch = await bcrypt.compare(
+            refreshTokenString,
+            tokenDoc.token,
+          );
+
           if (isMatch) {
             // Thu hồi token này
             await this.refreshTokenModel.findByIdAndUpdate(tokenDoc._id, {
@@ -451,37 +519,41 @@ export class AuthServiceService {
             this.logger.log(`Revoked refresh token for user ${userId}`);
           }
         } catch (bcryptError) {
-          this.logger.error(`Error comparing refresh tokens: ${bcryptError.message}`);
+          this.logger.error(
+            `Error comparing refresh tokens: ${bcryptError.message}`,
+          );
           // Tiếp tục với token tiếp theo
         }
       }
-      
+
       // Nếu không tìm thấy token phù hợp, thu hồi tất cả token của user
       if (!foundMatch) {
-        this.logger.warn(`No matching refresh token found, revoking all tokens for user ${userId}`);
-        
+        this.logger.warn(
+          `No matching refresh token found, revoking all tokens for user ${userId}`,
+        );
+
         const result = await this.refreshTokenModel.updateMany(
           { userId, isRevoked: false },
-          { isRevoked: true, lastUsedAt: new Date() }
+          { isRevoked: true, lastUsedAt: new Date() },
         );
-        
+
         revokedCount = result.modifiedCount;
       }
-      
+
       return {
         status: 'success',
-        data: { 
+        data: {
           message: 'Logged out successfully',
-          tokensRevoked: revokedCount
+          tokensRevoked: revokedCount,
         },
       };
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`, error.stack);
       return {
         status: 'error',
-        error: { 
-          code: 'LOGOUT_FAILED', 
-          message: 'Failed to logout'
+        error: {
+          code: 'LOGOUT_FAILED',
+          message: 'Failed to logout',
         },
       };
     }
@@ -490,47 +562,60 @@ export class AuthServiceService {
   /**
    * Generate JWT access and refresh tokens
    */
-  private async generateTokens(user: { 
-    _id: string | any; 
-    username: string; 
-    email: string; 
-    roles: string[]; 
+  private async generateTokens(user: {
+    _id: string | any;
+    username: string;
+    email: string;
+    roles: string[];
   }) {
     // Đảm bảo chuyển _id sang string một cách chính xác
-    const userId = typeof user._id === 'object' 
-    ? user._id.toString() 
-    : user._id;
-    
-    console.log("🔍 ~ generateTokens ~ apps/auth-service/src/auth-service.service.ts:500 ~ userId:", userId)
-    
+    const userId =
+      typeof user._id === 'object' ? user._id.toString() : user._id;
+
+    console.log(
+      '🔍 ~ generateTokens ~ apps/auth-service/src/auth-service.service.ts:500 ~ userId:',
+      userId,
+    );
+
     const jwtPayload = {
       sub: userId, // Chắc chắn sử dụng userId
       username: user.username,
       email: user.email,
       roles: user.roles,
     };
-  
+
     // Get values from config service
-    const accessTokenExpiresIn = this.configService.get<string>('JWT_ACCESS_EXPIRATION', '3600');
-    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRATION', '2592000');
-    
+    const accessTokenExpiresIn = this.configService.get<string>(
+      'JWT_EXPIRATION',
+      '3600',
+    );
+    const refreshTokenExpiresIn = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRATION_TIME',
+      '2592000',
+    );
+
     // Convert to numbers explicitly
     const accessExpiresInSeconds = parseInt(accessTokenExpiresIn, 10);
     const refreshExpiresInSeconds = parseInt(refreshTokenExpiresIn, 10);
-    
-    console.log('Token expiration times - Access:', accessExpiresInSeconds, 'Refresh:', refreshExpiresInSeconds);
-  
+
+    console.log(
+      'Token expiration times - Access:',
+      accessExpiresInSeconds,
+      'Refresh:',
+      refreshExpiresInSeconds,
+    );
+
     // Use the parsed numeric values for token signing
     const accessToken = this.jwtService.sign(jwtPayload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: accessExpiresInSeconds
+      expiresIn: accessExpiresInSeconds,
     });
-  
+
     const refreshToken = this.jwtService.sign(jwtPayload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: refreshExpiresInSeconds
+      expiresIn: refreshExpiresInSeconds,
     });
-  
+
     return {
       accessToken,
       refreshToken,
@@ -541,7 +626,7 @@ export class AuthServiceService {
         username: user.username,
         email: user.email,
         roles: user.roles,
-      }
+      },
     };
   }
 
@@ -554,11 +639,14 @@ export class AuthServiceService {
     userAgent?: string,
     ipAddress?: string,
   ) {
-    const refreshExpiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // Default 7 days
-    console.log('thoi gian het han:', refreshExpiresIn)
+    const refreshExpiresIn = this.configService.get<number>(
+      'JWT_REFRESH_EXPIRATION',
+      604800,
+    ); // Default 7 days
+    console.log('thoi gian het han:', refreshExpiresIn);
     const expiresAt = new Date();
-    expiresAt.setTime(expiresAt.getTime() + (refreshExpiresIn * 1000));
-    console.log("hethan", expiresAt)
+    expiresAt.setTime(expiresAt.getTime() + refreshExpiresIn * 1000);
+    console.log('hethan', expiresAt);
 
     // Hash the token before storing
     const hashedToken = await this.hashToken(token);

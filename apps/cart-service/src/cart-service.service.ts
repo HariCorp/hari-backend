@@ -44,9 +44,15 @@ export class CartServiceService {
       });
 
       if (existingItem) {
-        throw new DuplicateKeyException(
-          'productId',
-          createCartItemDto.productId.toString(),
+        existingItem.quantity += createCartItemDto.quantity;
+        await existingItem.save();
+        return existingItem;
+      }
+
+      // Ensure required product information is provided
+      if (!createCartItemDto.productName || !createCartItemDto.productPrice) {
+        throw new Error(
+          'Product name and price are required when adding to cart',
         );
       }
 
@@ -75,12 +81,7 @@ export class CartServiceService {
 
   async findUserCart(filter: FilterCartDto = {}): Promise<FindCartResponse> {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        userId,
-        productId,
-      } = filter;
+      const { page = 1, limit = 10, userId, productId } = filter;
 
       this.logger.log(
         `Finding cart items with filters: ${JSON.stringify(filter)}`,
@@ -101,12 +102,7 @@ export class CartServiceService {
       this.logger.debug(`Skip: ${skip}, Limit: ${limit}`);
 
       const [cartItems, total] = await Promise.all([
-        this.cartItemModel
-          .find(filterQuery)
-          .skip(skip)
-          .limit(limit)
-          .populate('productId', 'name price images stock')
-          .exec(),
+        this.cartItemModel.find(filterQuery).skip(skip).limit(limit).exec(),
         this.cartItemModel.countDocuments(filterQuery),
       ]);
 
@@ -137,7 +133,6 @@ export class CartServiceService {
     try {
       const cartItem = await this.cartItemModel
         .findOne({ _id: id, userId })
-        .populate('productId', 'name price images stock')
         .exec();
       if (!cartItem) {
         throw new NotFoundException(`Cart item not found with id: ${id}`);
@@ -148,18 +143,17 @@ export class CartServiceService {
     }
   }
 
-  async update(id: string, updateCartItemDto: UpdateCartItemDto, userId: string) {
+  async update(
+    id: string,
+    updateCartItemDto: UpdateCartItemDto,
+    userId: string,
+  ) {
     try {
       const cartItem = await this.cartItemModel
-        .findOneAndUpdate(
-          { _id: id, userId },
-          updateCartItemDto,
-          {
-            new: true,
-            runValidators: true,
-          },
-        )
-        .populate('productId', 'name price images stock')
+        .findOneAndUpdate({ _id: id, userId }, updateCartItemDto, {
+          new: true,
+          runValidators: true,
+        })
         .exec();
 
       if (!cartItem) {
@@ -199,4 +193,4 @@ export class CartServiceService {
       throw error;
     }
   }
-} 
+}
