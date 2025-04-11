@@ -10,6 +10,7 @@ export interface IUser {
   password: string;
   firstName?: string;
   lastName?: string;
+  avatar?: string;
   isVerified: boolean;
   status: UserStatus;
   roles: UserRole[];
