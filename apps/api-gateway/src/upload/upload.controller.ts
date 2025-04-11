@@ -27,8 +27,8 @@ export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @RBAC('create', 'file', 'any')
+  @UseGuards(JwtAuthGuard)
+  // @RBAC('create', 'file', 'own')
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFile(
     @UploadedFiles() files,
@@ -46,7 +46,7 @@ export class UploadController {
       const serviceFolder = this.validateServiceFolder(service);
 
       // Xử lý upload nhiều file
-      const uploadPromises = files.map(file => {
+      const uploadPromises = files.map((file) => {
         // Đọc file buffer và chuyển sang base64
         const buffer = file.buffer.toString('base64');
         const detectedFileType = fileType || this.detectFileType(file.mimetype);

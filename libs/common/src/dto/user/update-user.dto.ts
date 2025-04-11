@@ -25,6 +25,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  avatar?: string;
 }
 
 // Example of a Command using this DTO
