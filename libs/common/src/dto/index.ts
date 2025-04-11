@@ -11,3 +11,4 @@ export * from './cart/create-cart-item.dto';
 export * from './cart/update-cart-item.dto';
 export * from './cart/filter-cart.dto';
 export * from './cart/cart-item-created.event';
+export * from './auth/change-password.dto';

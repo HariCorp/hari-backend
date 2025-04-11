@@ -38,9 +38,6 @@ export class User {
   @Prop()
   lastName?: string;
 
-  @Prop()
-  avatar?: string;
-
   @Prop({ default: false })
   isVerified: boolean;
 

@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from '@app/common/dto/auth/login.dto';
-import { CreateUserDto } from '@app/common';
+import { CreateUserDto, ChangePasswordDto } from '@app/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
@@ -245,6 +245,36 @@ export class AuthController {
         _data: null,
         _message: 'Failed to retrieve user profile',
         _statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @CurrentUser() user
+  ) {
+    this.logger.log(`Password change attempt for user ID: ${user.userId}`);
+
+    try {
+      const result = await this.authService.changePassword(
+        user.userId,
+        changePasswordDto
+      );
+
+      return {
+        _data: { success: true },
+        _message: 'Password changed successfully',
+        _statusCode: HttpStatus.OK,
+      };
+    } catch (error) {
+      this.logger.error(`Password change failed: ${error.message}`);
+
+      return {
+        _data: null,
+        _message: error.message || 'Failed to change password',
+        _statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }

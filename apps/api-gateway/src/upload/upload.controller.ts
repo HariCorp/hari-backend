@@ -28,7 +28,7 @@ export class UploadController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  // @RBAC('create', 'file', 'own')
+  // @RBAC('create', 'file', 'any')
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFile(
     @UploadedFiles() files,

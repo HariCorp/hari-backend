@@ -1,7 +1,7 @@
 // apps/api-gateway/src/auth/auth.service.ts
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { KafkaProducerService } from '@app/common';
-import { CreateUserDto } from '@app/common';
+import { CreateUserDto, ChangePasswordDto } from '@app/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
@@ -195,6 +195,37 @@ export class AuthService {
     } catch (error) {
       this.logger.error(`Get profile failed: ${error.message}`, error.stack);
       throw new Error('Failed to get user profile');
+    }
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    this.logger.log(`Change password request for user: ${userId}`);
+    
+    try {
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.auth.changePassword',
+        { 
+          userId,
+          ...changePasswordDto,
+          metadata: {
+            id: `api-${Date.now()}`,
+            correlationId: `api-${Date.now()}`,
+            timestamp: Date.now(),
+            source: 'api-gateway',
+            type: 'command'
+          }
+        },
+      );
+  
+      if (response.status === 'error') {
+        this.logger.error(`Change password failed: ${response.error?.message}`);
+        throw new Error(response.error?.message || 'Failed to change password');
+      }
+  
+      return response.data || { success: true };
+    } catch (error) {
+      this.logger.error(`Change password failed: ${error.message}`, error.stack);
+      throw new Error(error.message || 'Failed to change password');
     }
   }
 }

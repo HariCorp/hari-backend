@@ -3,7 +3,7 @@ import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { AuthServiceService } from './auth-service.service';
 import { KafkaMessageHandler } from '@app/common/kafka/decorators/kafka-message-handler.decorator';
-import { CreateUserDto } from '@app/common';
+import { CreateUserDto, ChangePasswordDto } from '@app/common';
 
 @Controller()
 export class AuthServiceController {
@@ -73,5 +73,26 @@ export class AuthServiceController {
   async revokeToken(data: { refreshToken: string }) {
     this.logger.log('Token revocation request');
     return this.authService.revokeToken(data.refreshToken);
+  }
+
+  @MessagePattern('ms.auth.changePassword')
+  @KafkaMessageHandler({ topic: 'ms.auth.changePassword' })
+  async changePassword(data: { userId: string; currentPassword: string; newPassword: string; metadata?: any }) {
+    this.logger.log(`Password change request for user: ${data.userId}`);
+    
+    const { userId, currentPassword, newPassword } = data;
+    
+    if (!userId || !currentPassword || !newPassword) {
+      this.logger.warn('Missing required parameters for password change');
+      return {
+        status: 'error',
+        error: { 
+          code: 'INVALID_REQUEST', 
+          message: 'Missing required parameters for password change' 
+        },
+      };
+    }
+    
+    return this.authService.changePassword(userId, currentPassword, newPassword);
   }
 }

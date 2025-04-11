@@ -666,4 +666,81 @@ export class AuthServiceService {
   private async hashToken(token: string): Promise<string> {
     return await bcrypt.hash(token, 10);
   }
+
+  /**
+   * Change user password
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    try {
+      this.logger.log(`Processing password change for user ID: ${userId}`);
+      
+      // First verify the current password with the User Service
+      const verifyResult = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.user.verifyUserPassword',
+        {
+          userId,
+          password: currentPassword
+        },
+      );
+
+      if (verifyResult.status === 'error' || !verifyResult.data?.isValid) {
+        return {
+          status: 'error',
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Current password is incorrect'
+          }
+        };
+      }
+
+      // If current password is verified, update the password in User Service
+      const updateResult = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.user.updatePassword',
+        {
+          userId,
+          newPassword,
+          metadata: {
+            id: `auth-${Date.now()}`,
+            correlationId: `auth-${Date.now()}`,
+            timestamp: Date.now(),
+            source: 'auth-service',
+            type: 'command'
+          }
+        },
+      );
+
+      if (updateResult.status === 'error') {
+        return {
+          status: 'error',
+          error: {
+            code: 'PASSWORD_UPDATE_FAILED',
+            message: updateResult.error?.message || 'Failed to update password'
+          }
+        };
+      }
+
+      // Revoke all refresh tokens for this user to force re-login with new password
+      await this.refreshTokenModel.updateMany(
+        { userId: userId.toString(), isRevoked: false },
+        { isRevoked: true }
+      );
+
+      return {
+        status: 'success',
+        data: {
+          success: true,
+          message: 'Password changed successfully'
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Password change failed: ${error.message}`, error.stack);
+      return {
+        status: 'error',
+        error: {
+          code: 'PASSWORD_CHANGE_FAILED',
+          message: 'Failed to change password'
+        }
+      };
+    }
+  }
 }
