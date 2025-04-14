@@ -612,7 +612,7 @@ export class AuthServiceService {
     });
 
     const refreshToken = this.jwtService.sign(jwtPayload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: refreshExpiresInSeconds,
     });
 
@@ -670,16 +670,20 @@ export class AuthServiceService {
   /**
    * Change user password
    */
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     try {
       this.logger.log(`Processing password change for user ID: ${userId}`);
-      
+
       // First verify the current password with the User Service
       const verifyResult = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.user.verifyUserPassword',
         {
           userId,
-          password: currentPassword
+          password: currentPassword,
         },
       );
 
@@ -688,8 +692,8 @@ export class AuthServiceService {
           status: 'error',
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'Current password is incorrect'
-          }
+            message: 'Current password is incorrect',
+          },
         };
       }
 
@@ -704,8 +708,8 @@ export class AuthServiceService {
             correlationId: `auth-${Date.now()}`,
             timestamp: Date.now(),
             source: 'auth-service',
-            type: 'command'
-          }
+            type: 'command',
+          },
         },
       );
 
@@ -714,32 +718,35 @@ export class AuthServiceService {
           status: 'error',
           error: {
             code: 'PASSWORD_UPDATE_FAILED',
-            message: updateResult.error?.message || 'Failed to update password'
-          }
+            message: updateResult.error?.message || 'Failed to update password',
+          },
         };
       }
 
       // Revoke all refresh tokens for this user to force re-login with new password
       await this.refreshTokenModel.updateMany(
         { userId: userId.toString(), isRevoked: false },
-        { isRevoked: true }
+        { isRevoked: true },
       );
 
       return {
         status: 'success',
         data: {
           success: true,
-          message: 'Password changed successfully'
-        }
+          message: 'Password changed successfully',
+        },
       };
     } catch (error) {
-      this.logger.error(`Password change failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Password change failed: ${error.message}`,
+        error.stack,
+      );
       return {
         status: 'error',
         error: {
           code: 'PASSWORD_CHANGE_FAILED',
-          message: 'Failed to change password'
-        }
+          message: 'Failed to change password',
+        },
       };
     }
   }

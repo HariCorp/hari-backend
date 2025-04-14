@@ -32,6 +32,10 @@ export class AccessControlFactory {
       .readAny('file')
       .updateAny('file')
       .deleteAny('file')
+      .createAny('cart-item')
+      .readAny('cart-item')
+      .updateAny('cart-item')
+      .deleteAny('cart-item')
 
     // Admin - can manage users (except super admins) and all products
     ac.grant(UserRole.ADMIN)
@@ -50,7 +54,11 @@ export class AccessControlFactory {
       .createAny('file')
       .readAny('file')
       .updateAny('file')
-      .deleteAny('file');
+      .deleteAny('file')
+      .createAny('cart-item')
+      .readAny('cart-item')
+      .updateAny('cart-item')
+      .deleteAny('cart-item');
 
     // Seller - can manage own products and read/update own profile
     ac.grant(UserRole.SELLER)
@@ -64,7 +72,11 @@ export class AccessControlFactory {
       .createOwn('file')
       .readOwn('file')
       .updateOwn('file')
-      .deleteOwn('file');
+      .deleteOwn('file')
+      .createOwn('cart-item')
+      .readOwn('cart-item')
+      .updateOwn('cart-item')
+      .deleteOwn('cart-item');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
@@ -75,7 +87,11 @@ export class AccessControlFactory {
       .createOwn('file')
       .readOwn('file')
       .updateOwn('file')
-      .deleteOwn('file');
+      .deleteOwn('file')
+      .createOwn('cart-item')
+      .readOwn('cart-item')
+      .updateOwn('cart-item')
+      .deleteOwn('cart-item');
 
     return ac;
   }
