@@ -134,10 +134,15 @@ export class CartServiceService {
       const productMap = new Map(products.map((p) => [p._id, p]));
 
       // Enrich cart items with product details
-      const enrichedCartItems = cartItems.map((item) => ({
-        ...item.toObject(),
-        product: productMap.get(item.productId.toString()),
-      }));
+      const enrichedCartItems = cartItems.map((item) => {
+        const itemObj = item.toObject() as any;
+        // Keep only necessary fields and product details
+        const { productName, productPrice, productId, ...rest } = itemObj;
+        return {
+          ...rest,
+          product: productMap.get(item.productId.toString())
+        };
+      });
 
       const totalPages = Math.ceil(total / limit);
       this.logger.log(
