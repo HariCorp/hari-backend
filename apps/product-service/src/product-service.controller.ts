@@ -122,6 +122,24 @@ export class ProductServiceController {
     }
   }
 
+  @MessagePattern('ms.product.findByIds')
+  async findByIds(command) {
+    try {
+      const { productIds } = command.data;
+      const products = await this.productServiceService.findByIds(productIds);
+      return { status: 'success', data: products };
+    } catch (error) {
+      console.log(`Failed to find products by IDs: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'FIND_PRODUCTS_BY_IDS_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
   // Các phương thức category giữ nguyên như trong code gốc
   @MessagePattern('ms.category.create')
   async createCategory(command: any) {

@@ -253,4 +253,23 @@ export class ProductServiceService {
       throw error; // Ném lỗi để controller xử lý
     }
   }
+
+  async findByIds(productIds: string[]) {
+    try {
+      const products = await this.productModel
+        .find({
+          _id: { $in: productIds.map(id => new Types.ObjectId(id)) }
+        })
+        .populate('category', 'name')
+        .exec();
+
+      return products;
+    } catch (error) {
+      this.logger.error(
+        `Failed to find products by IDs: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 }

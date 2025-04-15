@@ -15,6 +15,8 @@ import {
 } from 'apps/api-gateway/src/cart/schemas/cart-item.schema';
 import { FilterQuery, Types } from 'mongoose';
 import { Model } from 'mongoose';
+import { KafkaResponse } from '@app/common/kafka/interfaces/kafka-message.interface';
+import { ProductResponseDto } from '@app/common/dto/product/product-response.dto';
 
 export interface FindCartResponse {
   cartItems: CartItem[];
@@ -106,13 +108,44 @@ export class CartServiceService {
         this.cartItemModel.countDocuments(filterQuery),
       ]);
 
+      // Get product details for all cart items
+      const productIds = cartItems.map((item) => item.productId.toString());
+      const productsResponse = await this.kafkaProducer.sendAndReceive<
+        { data: { productIds: string[] }; metadata: any },
+        KafkaResponse<ProductResponseDto[]>
+      >('ms.product.findByIds', {
+        data: { productIds },
+        metadata: {
+          id: `cart-${Date.now()}`,
+          correlationId: `cart-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'cart-service',
+          type: 'query',
+        },
+      });
+
+      if (productsResponse.status === 'error') {
+        throw new Error(
+          `Failed to fetch product details: ${productsResponse.error?.message}`,
+        );
+      }
+
+      const products = productsResponse.data || [];
+      const productMap = new Map(products.map((p) => [p._id, p]));
+
+      // Enrich cart items with product details
+      const enrichedCartItems = cartItems.map((item) => ({
+        ...item.toObject(),
+        product: productMap.get(item.productId.toString()),
+      }));
+
       const totalPages = Math.ceil(total / limit);
       this.logger.log(
         `Found ${cartItems.length} cart items out of ${total} total`,
       );
 
       return {
-        cartItems,
+        cartItems: enrichedCartItems,
         total,
         page,
         limit,
