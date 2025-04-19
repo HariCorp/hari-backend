@@ -3,7 +3,10 @@ import { MessagePattern } from '@nestjs/microservices';
 import { AiServiceService } from './ai-service.service';
 import { CreateApiKeyCommand } from '../dto/create-api-key.dto';
 import { Logger } from '@nestjs/common';
-import { CreateAIModelCommand } from '@app/common/dto/ai/createAIModel.dto';
+import {
+  CreateAIModelCommand,
+  UpdateAIModelCommand,
+} from '@app/common/dto/ai/AIModel.dto';
 import { ApiKeyType } from '@app/common';
 
 @Controller()
@@ -272,6 +275,31 @@ export class AiServiceController {
         status: 'error',
         error: {
           code: 'AI_MODEL_CREATION_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.aimodel.update')
+  async updateAiModel(command: UpdateAIModelCommand) {
+    try {
+      const aiModel = await this.aiServiceService.updateAiModel(command.data);
+
+      return {
+        status: 'success',
+        data: aiModel,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update AI model: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code:
+            error.name === 'NotFoundException'
+              ? 'AI_MODEL_NOT_FOUND'
+              : 'AI_MODEL_UPDATE_FAILED',
           message: error.message,
         },
       };

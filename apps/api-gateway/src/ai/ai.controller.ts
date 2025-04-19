@@ -11,6 +11,7 @@ import {
   HttpStatus,
   ValidationPipe,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { CreateApiKeyDto } from 'apps/ai-service/dto/create-api-key.dto';
@@ -19,7 +20,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RBAC, RolesGuard } from '@app/common';
 import { CompletionDto } from '@app/common/dto/ai/completion.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CreateAIModelDTO } from '@app/common/dto/ai/createAIModel.dto';
+import {
+  CreateAIModelDTO,
+  UpdateAIModelDTO,
+} from '@app/common/dto/ai/AIModel.dto';
 
 @Controller('ai')
 export class AiController {
@@ -86,5 +90,18 @@ export class AiController {
         error.status || HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  @Put('update-ai-model')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RBAC('update', 'aiModel', 'any')
+  async updateAIModel(
+    @Body(new ValidationPipe()) updateAIModelDto: UpdateAIModelDTO,
+  ) {
+    const result = await this.aiService.updateAIModel(updateAIModelDto);
+    return {
+      _message: 'AI model updated successfully',
+      _data: result,
+    };
   }
 }

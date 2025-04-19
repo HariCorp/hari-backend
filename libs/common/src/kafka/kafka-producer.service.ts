@@ -66,6 +66,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.apiKey.create',
     'ms.ai.getCompletion',
     'ms.aimodel.create',
+    'ms.aimodel.update',
 
     // File service topics
     'ms.file.upload',

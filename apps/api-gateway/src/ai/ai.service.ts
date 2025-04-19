@@ -3,7 +3,7 @@ import { CompletionDto } from '@app/common/dto/ai/completion.dto';
 import {
   CreateAIModelCommand,
   CreateAIModelDTO,
-} from '@app/common/dto/ai/createAIModel.dto';
+} from '@app/common/dto/ai/AIModel.dto';
 import { Injectable } from '@nestjs/common';
 import {
   CreateApiKeyCommand,
@@ -122,6 +122,35 @@ export class AiService {
       return response.data;
     } catch (error) {
       console.log(`Failed to create AI model: ${error.message}`);
+      throw new Error(error);
+    }
+  }
+
+  async updateAIModel(updateAIModelDto: CreateAIModelDTO) {
+    try {
+      const command = {
+        data: updateAIModelDto,
+        metadata: {
+          id: `ai-model-${Date.now()}`,
+          correlationId: `ai-model-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'ai-service',
+          type: 'command',
+        },
+      };
+      console.log(
+        `Sending update AI model command: ${JSON.stringify(updateAIModelDto)}`,
+      );
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.aimodel.update',
+        command,
+      );
+      if (response.status === 'error') {
+        throw new Error(response.error.message);
+      }
+      return response.data;
+    } catch (error) {
+      console.log(`Failed to update AI model: ${error.message}`);
       throw new Error(error);
     }
   }

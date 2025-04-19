@@ -4,7 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Prompt, PromptDocument } from '../schemas/prompt.schema';
-import { CreateAIModelDTO } from '@app/common/dto/ai/createAIModel.dto';
+import {
+  CreateAIModelDTO,
+  UpdateAIModelDTO,
+} from '@app/common/dto/ai/AIModel.dto';
 import { AIModel, AIModelDocument } from '../schemas/ai-model.schema';
 import { ApiKey, ApiKeyDocument } from '../schemas/api-key.schema';
 import { ApiKeyStatus, ApiKeyType } from '@app/common';
@@ -407,6 +410,32 @@ export class AiServiceService {
     } catch (error) {
       this.logger.error(`Failed to create AI model: ${error.message}`);
       throw new Error(`Failed to create AI model: ${error.message}`);
+    }
+  }
+
+  async updateAiModel(updateAIModelDTO: UpdateAIModelDTO) {
+    this.logger.log(`Updating AI model: ${updateAIModelDTO.modelName}`);
+    try {
+      const aiModel = await this.aiModel
+        .findByIdAndUpdate(updateAIModelDTO._id, updateAIModelDTO, {
+          new: true,
+        })
+        .exec();
+
+      if (!aiModel) {
+        throw new NotFoundException(
+          `AI model with ID ${updateAIModelDTO._id} not found`,
+        );
+      }
+
+      this.logger.log(`Successfully updated AI model: ${aiModel._id}`);
+      return aiModel;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update AI model: ${error.message}`);
+      throw new Error(`Failed to update AI model: ${error.message}`);
     }
   }
 
