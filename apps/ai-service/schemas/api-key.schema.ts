@@ -1,32 +1,16 @@
 // apps/ai-service/src/schemas/api-key.schema.ts
+import { ApiKeyPlan, ApiKeyStatus, ApiKeyType } from '@app/common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export type ApiKeyDocument = ApiKey & Document;
 
-export enum ApiKeyStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  REVOKED = 'revoked',
-  RATE_LIMITED = 'rate_limited',
-}
-
-export enum ApiKeyType {
-  GEMINI = 'gemini',
-  OPENAI = 'openai',
-  ANTHROPIC = 'anthropic',
-}
-
-export enum ApiKeyPlan {
-  FREE = 'free',
-  BASIC = 'basic',
-  PREMIUM = 'premium',
-  ENTERPRISE = 'enterprise',
-}
-
 @Schema({ timestamps: true })
 export class ApiKey {
   _id: Types.ObjectId;
+
+  @Prop({ type: String, required: true })
+  userId: string;
 
   @Prop({ required: true, unique: true })
   key: string;
@@ -87,9 +71,6 @@ export class ApiKey {
 
   @Prop({ type: Date })
   minuteResetAt: Date;
-
-  @Prop({ type: String })
-  userId?: string;
 
   @Prop({ type: Boolean, default: false })
   isDefault: boolean;

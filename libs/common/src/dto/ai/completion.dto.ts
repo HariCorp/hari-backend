@@ -23,4 +23,8 @@ export class CompletionDto {
   @IsOptional()
   @IsString()
   systemPrompt?: string;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }

@@ -1,10 +1,5 @@
 // apps/ai-service/src/dto/create-api-key.dto.ts
-import { Command } from '@app/common';
-import {
-  ApiKeyPlan,
-  ApiKeyStatus,
-  ApiKeyType,
-} from '../schemas/api-key.schema';
+import { ApiKeyPlan, ApiKeyStatus, ApiKeyType, Command } from '@app/common';
 import {
   IsEnum,
   IsNotEmpty,
@@ -15,9 +10,9 @@ import {
 } from 'class-validator';
 
 export class CreateApiKeyDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  name: string;
+  name?: string = 'API-KEY';
 
   @IsNotEmpty()
   @IsString()

@@ -36,6 +36,10 @@ export class AccessControlFactory {
       .readAny('cart-item')
       .updateAny('cart-item')
       .deleteAny('cart-item')
+      .createAny('ai')
+      .readAny('ai')
+      .updateAny('ai')
+      .deleteAny('ai');
 
     // Admin - can manage users (except super admins) and all products
     ac.grant(UserRole.ADMIN)
@@ -58,7 +62,15 @@ export class AccessControlFactory {
       .createAny('cart-item')
       .readAny('cart-item')
       .updateAny('cart-item')
-      .deleteAny('cart-item');
+      .deleteAny('cart-item')
+      .createAny('ai')
+      .readAny('ai')
+      .updateAny('ai')
+      .deleteAny('ai')
+      .createAny('apiKey')
+      .readAny('apiKey')
+      .updateAny('apiKey')
+      .deleteAny('apiKey');
 
     // Seller - can manage own products and read/update own profile
     ac.grant(UserRole.SELLER)
@@ -76,7 +88,19 @@ export class AccessControlFactory {
       .createOwn('cart-item')
       .readOwn('cart-item')
       .updateOwn('cart-item')
-      .deleteOwn('cart-item');
+      .deleteOwn('cart-item')
+      .createOwn('ai')
+      .readOwn('ai')
+      .updateOwn('ai')
+      .deleteOwn('ai')
+      .createOwn('apiKey')
+      .readOwn('apiKey')
+      .updateOwn('apiKey')
+      .deleteOwn('apiKey')
+      .createOwn('aiModel')
+      .readAny('aiModel')
+      .updateOwn('aiModel')
+      .deleteOwn('aiModel');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
@@ -91,7 +115,19 @@ export class AccessControlFactory {
       .createOwn('cart-item')
       .readOwn('cart-item')
       .updateOwn('cart-item')
-      .deleteOwn('cart-item');
+      .deleteOwn('cart-item')
+      .createOwn('ai')
+      .readOwn('ai')
+      .updateOwn('ai')
+      .deleteOwn('ai')
+      .createOwn('apiKey')
+      .readOwn('apiKey')
+      .updateOwn('apiKey')
+      .deleteOwn('apiKey')
+      .createOwn('aiModel')
+      .readAny('aiModel')
+      .updateOwn('aiModel')
+      .deleteOwn('aiModel');
 
     return ac;
   }
@@ -110,7 +146,12 @@ export class AccessControlFactory {
    * @param resource Resource to access (user, product, etc.)
    * @param isOwn Whether the resource belongs to the user
    */
-  can(roles: string[], action: string, resource: string, isOwn: boolean = false): boolean {
+  can(
+    roles: string[],
+    action: string,
+    resource: string,
+    isOwn: boolean = false,
+  ): boolean {
     // No roles means no access
     if (!roles || roles.length === 0) {
       return false;
@@ -130,13 +171,15 @@ export class AccessControlFactory {
       try {
         // Get the permission object for this role, action, and resource
         const permission = this.ac.can(role)[permissionQuery](resource);
-        
+
         // If any role has permission, return true
         if (permission.granted) {
           return true;
         }
       } catch (error) {
-        console.error(`Error checking permission for role ${role}: ${error.message}`);
+        console.error(
+          `Error checking permission for role ${role}: ${error.message}`,
+        );
         // Continue checking other roles
       }
     }

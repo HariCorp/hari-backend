@@ -1,4 +1,9 @@
 import { KafkaProducerService } from '@app/common';
+import { CompletionDto } from '@app/common/dto/ai/completion.dto';
+import {
+  CreateAIModelCommand,
+  CreateAIModelDTO,
+} from '@app/common/dto/ai/createAIModel.dto';
 import { Injectable } from '@nestjs/common';
 import {
   CreateApiKeyCommand,
@@ -42,7 +47,7 @@ export class AiService {
 
   // Thêm phương thức getCompletion
   async getCompletion(
-    prompt: string,
+    completionDto: CompletionDto,
     options?: {
       maxTokens?: number;
       temperature?: number;
@@ -51,6 +56,7 @@ export class AiService {
     },
   ) {
     try {
+      const { prompt, userId } = completionDto;
       // System prompt mặc định hoặc từ options
       const systemPrompt =
         options?.systemPrompt || 'You are a helpful assistant.'; // Ví dụ mặc định
@@ -58,6 +64,7 @@ export class AiService {
 
       const message = {
         prompt: fullPrompt, // Sử dụng fullPrompt thay vì prompt gốc
+        userId,
         options,
         metadata: {
           id: `api-${Date.now()}`,
@@ -90,19 +97,32 @@ export class AiService {
     }
   }
 
-  findAll() {
-    return `This action returns all ai`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} ai`;
-  }
-
-  update(id: number, updateAiDto: UpdateApiKeyDto) {
-    return `This action updates a #${id} ai`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} ai`;
+  async createAIModel(createAIModelDto: CreateAIModelDTO) {
+    try {
+      const command: CreateAIModelCommand = {
+        data: createAIModelDto,
+        metadata: {
+          id: `ai-model-${Date.now()}`,
+          correlationId: `ai-model-${Date.now()}`,
+          timestamp: Date.now(),
+          source: 'ai-service',
+          type: 'command',
+        },
+      };
+      console.log(
+        `Sending create AI model command: ${JSON.stringify(createAIModelDto)}`,
+      );
+      const response = await this.kafkaProducer.sendAndReceive<any, any>(
+        'ms.aimodel.create',
+        command,
+      );
+      if (response.status === 'error') {
+        throw new Error(response.error.message);
+      }
+      return response.data;
+    } catch (error) {
+      console.log(`Failed to create AI model: ${error.message}`);
+      throw new Error(error);
+    }
   }
 }
