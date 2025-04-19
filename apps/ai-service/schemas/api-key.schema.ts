@@ -1,4 +1,4 @@
-// apps/ai-service/src/schemas/api-key.schema.ts
+// apps/ai-service/schemas/api-key.schema.ts
 import { ApiKeyPlan, ApiKeyStatus, ApiKeyType } from '@app/common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
@@ -19,6 +19,7 @@ export class ApiKey {
   name: string;
 
   @Prop({
+    type: String,
     required: true,
     enum: Object.values(ApiKeyType),
     default: ApiKeyType.GEMINI,
@@ -26,6 +27,7 @@ export class ApiKey {
   type: ApiKeyType;
 
   @Prop({
+    type: String,
     required: true,
     enum: Object.values(ApiKeyStatus),
     default: ApiKeyStatus.ACTIVE,
@@ -33,6 +35,7 @@ export class ApiKey {
   status: ApiKeyStatus;
 
   @Prop({
+    type: String,
     required: true,
     enum: Object.values(ApiKeyPlan),
     default: ApiKeyPlan.FREE,

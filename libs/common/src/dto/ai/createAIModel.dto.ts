@@ -1,16 +1,17 @@
-import { ApiKeyType } from '@app/common/enums';
+import { ApiKeyPlan, ApiKeyType } from '@app/common/enums';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateAIModelDTO {
   @IsString()
-  modelName: string;
+  model: string;
 
   @IsString()
-  type: string;
+  @IsEnum(ApiKeyPlan)
+  type: string = ApiKeyPlan.FREE;
 
   @IsString()
   @IsEnum(ApiKeyType)
-  model: string;
+  modelName: string;
 
   @IsOptional()
   @IsString()

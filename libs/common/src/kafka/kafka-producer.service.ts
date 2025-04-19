@@ -62,8 +62,10 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.order.created',
     'ms.payment.completed',
 
+    //AI service topics
     'ms.apiKey.create',
     'ms.ai.getCompletion',
+    'ms.aimodel.create',
 
     // File service topics
     'ms.file.upload',
