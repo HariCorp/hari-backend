@@ -1,10 +1,5 @@
 // apps/ai-service/src/dto/update-api-key.dto.ts
 import {
-  ApiKeyPlan,
-  ApiKeyStatus,
-  ApiKeyType,
-} from '../schemas/api-key.schema';
-import {
   IsBoolean,
   IsDate,
   IsEnum,
@@ -14,6 +9,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiKeyPlan, ApiKeyStatus, ApiKeyType } from '@app/common';
 
 export class UpdateApiKeyDto {
   @IsOptional()

@@ -3,7 +3,8 @@ import { MessagePattern } from '@nestjs/microservices';
 import { AiServiceService } from './ai-service.service';
 import { CreateApiKeyCommand } from '../dto/create-api-key.dto';
 import { Logger } from '@nestjs/common';
-import { ApiKeyType } from '../schemas/api-key.schema'; // Import enum ApiKeyType
+import { CreateAIModelCommand } from '@app/common/dto/ai/createAIModel.dto';
+import { ApiKeyType } from '@app/common';
 
 @Controller()
 export class AiServiceController {
@@ -88,11 +89,11 @@ export class AiServiceController {
    * @returns Phản hồi với trạng thái và kết quả hoặc lỗi
    */
   @MessagePattern('ms.ai.getCompletion')
-  async getCompletion(data: { prompt: string; options?: any }) {
+  async getCompletion(data: { prompt: string; userId: string; options?: any }) {
     this.logger.log(`Yêu cầu hoàn thành Gemini: ${JSON.stringify(data)}`);
 
     try {
-      const { prompt, options } = data;
+      const { prompt, userId, options } = data;
 
       if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
         this.logger.warn('Prompt không hợp lệ');
@@ -107,6 +108,7 @@ export class AiServiceController {
 
       const result = await this.aiServiceService.getCompletion(
         prompt.trim(),
+        userId,
         options,
       );
       this.logger.log(`Hoàn thành thành công: ${JSON.stringify(result)}`);
@@ -244,6 +246,32 @@ export class AiServiceController {
             error.name === 'NotFoundException'
               ? 'PROMPT_SCHEMA_NOT_FOUND'
               : 'PROMPT_SCHEMA_UPDATE_FAILED',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.aimodel.create')
+  async createAiModel(command: CreateAIModelCommand) {
+    this.logger.log(
+      `Received create AI model request: ${JSON.stringify(command.data.modelName)}`,
+    );
+
+    try {
+      const aiModel = await this.aiServiceService.createAiModel(command.data);
+
+      return {
+        status: 'success',
+        data: aiModel,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to create AI model: ${error.message}`);
+
+      return {
+        status: 'error',
+        error: {
+          code: 'AI_MODEL_CREATION_FAILED',
           message: error.message,
         },
       };

@@ -1,15 +1,13 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateApiKeyDto } from '../dto/create-api-key.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  ApiKey,
-  ApiKeyDocument,
-  ApiKeyStatus,
-  ApiKeyType,
-} from '../schemas/api-key.schema';
 import { Model } from 'mongoose';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Prompt, PromptDocument } from '../schemas/prompt.schema';
+import { CreateAIModelDTO } from '@app/common/dto/ai/createAIModel.dto';
+import { AIModel, AIModelDocument } from '../schemas/ai-model.schema';
+import { ApiKey, ApiKeyDocument } from '../schemas/api-key.schema';
+import { ApiKeyStatus, ApiKeyType } from '@app/common';
 
 @Injectable()
 export class AiServiceService {
@@ -18,6 +16,7 @@ export class AiServiceService {
   constructor(
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
     @InjectModel(Prompt.name) private promptModel: Model<PromptDocument>,
+    @InjectModel(AIModel.name) private aiModel: Model<AIModelDocument>,
   ) {}
 
   /**
@@ -43,6 +42,7 @@ export class AiServiceService {
    * @returns API key với số lượng gọi thấp nhất hoặc null nếu không tìm thấy
    */
   async getApiKeyWithLowestDailyCalls(
+    userId: string,
     type: ApiKeyType = ApiKeyType.GEMINI,
   ): Promise<ApiKeyDocument | null> {
     this.logger.log(`Tìm API key với số lượng gọi thấp nhất, loại: ${type}`);
@@ -50,6 +50,7 @@ export class AiServiceService {
       const query = {
         type,
         status: ApiKeyStatus.ACTIVE,
+        userId,
         $or: [
           { expiresAt: { $exists: false } },
           { expiresAt: null },
@@ -87,6 +88,7 @@ export class AiServiceService {
    */
   async getCompletion(
     prompt: string,
+    userId,
     options?: {
       maxTokens?: number;
       temperature?: number;
@@ -106,7 +108,7 @@ export class AiServiceService {
         model = 'gemini-2.5-pro-exp-03-25', // Model mặc định của Gemini
       } = options || {};
 
-      const apiKey = await this.getApiKeyWithLowestDailyCalls();
+      const apiKey = await this.getApiKeyWithLowestDailyCalls(userId);
       if (!apiKey) {
         this.logger.error('Không tìm thấy API key Gemini nào hoạt động');
         throw new NotFoundException('Không tìm thấy API key Gemini hoạt động');
@@ -393,6 +395,18 @@ export class AiServiceService {
       }
       this.logger.error(`Failed to delete prompt schema: ${error.message}`);
       throw new Error(`Failed to delete prompt schema: ${error.message}`);
+    }
+  }
+
+  async createAiModel(createAIModelDTO: CreateAIModelDTO) {
+    this.logger.log(`Creating AI model: ${createAIModelDTO.modelName}`);
+    try {
+      const aiModel = await this.aiModel.create(createAIModelDTO);
+      this.logger.log(`Successfully created AI model: ${aiModel._id}`);
+      return aiModel;
+    } catch (error) {
+      this.logger.error(`Failed to create AI model: ${error.message}`);
+      throw new Error(`Failed to create AI model: ${error.message}`);
     }
   }
 

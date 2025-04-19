@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CommonModule } from '@app/common';
 import { ApiKey, ApiKeySchema } from '../schemas/api-key.schema';
 import { Prompt, PromptSchema } from '../schemas/prompt.schema';
+import { AIModel, AIModelSchema } from '../schemas/ai-model.schema';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { Prompt, PromptSchema } from '../schemas/prompt.schema';
     }),
     MongooseModule.forFeature([{ name: ApiKey.name, schema: ApiKeySchema }]),
     MongooseModule.forFeature([{ name: Prompt.name, schema: PromptSchema }]),
+    MongooseModule.forFeature([{ name: AIModel.name, schema: AIModelSchema }]),
     CommonModule,
   ],
   controllers: [AiServiceController],
