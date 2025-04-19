@@ -119,14 +119,6 @@ export class User {
 
   // Phone numbers
   @Prop({
-    type: [
-      {
-        number: { type: String, required: true },
-        countryCode: { type: String, required: true, default: '+84' },
-        isVerified: { type: Boolean, default: false },
-        isPrimary: { type: Boolean, default: false },
-      },
-    ],
     default: [],
   })
   phoneNumbers: PhoneNumber[];
