@@ -24,6 +24,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.auth.refresh',
     'ms.auth.validate',
     'ms.auth.logout',
+    'ms.auth.changePassword',
 
     // User service topics
     'ms.user.create',
@@ -36,6 +37,8 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.user.authenticate',
     'ms.user.verifyCredentials',
     'ms.user.findUserWithAuth',
+    'ms.user.verifyUserPassword',
+    'ms.user.updatePassword',
 
     // Product service topics
     'ms.product.create',

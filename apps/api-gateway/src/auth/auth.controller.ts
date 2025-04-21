@@ -251,16 +251,15 @@ export class AuthController {
 
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
-  async changePassword(
-    @Body() changePasswordDto: ChangePasswordDto,
-    @CurrentUser() user
-  ) {
-    this.logger.log(`Password change attempt for user ID: ${user.userId}`);
+  async changePassword(@Body() changePasswordDto: ChangePasswordDto) {
+    this.logger.log(
+      `Password change attempt for user ID: ${changePasswordDto.userId}`,
+    );
 
     try {
-      const result = await this.authService.changePassword(
-        user.userId,
-        changePasswordDto
+      await this.authService.changePassword(
+        changePasswordDto.userId,
+        changePasswordDto,
       );
 
       return {

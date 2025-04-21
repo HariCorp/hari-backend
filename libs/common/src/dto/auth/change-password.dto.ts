@@ -10,14 +10,17 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(8)
   newPassword: string;
+
+  @IsString()
+  userId: string;
 }
 
 export class ChangePasswordCommand extends Command {
   constructor(
     public readonly userId: string,
     public readonly data: ChangePasswordDto,
-    metadata?: any
+    metadata?: any,
   ) {
     super(metadata);
   }
-} 
+}

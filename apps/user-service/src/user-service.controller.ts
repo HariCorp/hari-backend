@@ -3,7 +3,12 @@ import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { UserServiceService } from './user-service.service';
 import { KafkaMessageHandler } from '@app/common/kafka/decorators/kafka-message-handler.decorator';
-import { CreateUserCommand, UpdateUserCommand, GetUserByIdQuery, FilterUserDto } from '@app/common';
+import {
+  CreateUserCommand,
+  UpdateUserCommand,
+  GetUserByIdQuery,
+  FilterUserDto,
+} from '@app/common';
 
 @Controller()
 export class UserServiceController {
@@ -14,13 +19,15 @@ export class UserServiceController {
   @MessagePattern('ms.user.create')
   @KafkaMessageHandler({ topic: 'ms.user.create' })
   async createUser(command: CreateUserCommand) {
-    this.logger.log(`Received create user command for username: ${command.data.username}`);
+    this.logger.log(
+      `Received create user command for username: ${command.data.username}`,
+    );
     try {
       const user = await this.userService.create(command.data);
       this.logger.log(`User created successfully: ${user._id}`);
       return {
         status: 'success',
-        data: user
+        data: user,
       };
     } catch (error) {
       this.logger.error(`Failed to create user: ${error.message}`);
@@ -28,8 +35,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'CREATE_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -46,8 +53,8 @@ export class UserServiceController {
           users: result.users,
           total: result.total,
           page: data.filter?.page || 1,
-          limit: data.filter?.limit || 10
-        }
+          limit: data.filter?.limit || 10,
+        },
       };
     } catch (error) {
       this.logger.error(`Failed to find users: ${error.message}`);
@@ -55,8 +62,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'FIND_USERS_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -69,7 +76,7 @@ export class UserServiceController {
       const user = await this.userService.findById(query.userId);
       return {
         status: 'success',
-        data: user
+        data: user,
       };
     } catch (error) {
       this.logger.error(`Failed to find user: ${error.message}`);
@@ -77,8 +84,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'FIND_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -91,7 +98,7 @@ export class UserServiceController {
       const user = await this.userService.findByUsername(data.username);
       return {
         status: 'success',
-        data: user
+        data: user,
       };
     } catch (error) {
       this.logger.error(`Failed to find user: ${error.message}`);
@@ -99,8 +106,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'FIND_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -113,7 +120,7 @@ export class UserServiceController {
       const user = await this.userService.update(command.userId, command.data);
       return {
         status: 'success',
-        data: user
+        data: user,
       };
     } catch (error) {
       this.logger.error(`Failed to update user: ${error.message}`);
@@ -121,8 +128,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'UPDATE_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -137,8 +144,8 @@ export class UserServiceController {
         status: 'success',
         data: {
           message: 'User deleted successfully',
-          user
-        }
+          user,
+        },
       };
     } catch (error) {
       this.logger.error(`Failed to delete user: ${error.message}`);
@@ -146,8 +153,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'DELETE_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
       };
     }
   }
@@ -155,26 +162,31 @@ export class UserServiceController {
   @MessagePattern('ms.user.verifyCredentials')
   @KafkaMessageHandler({ topic: 'ms.user.verifyCredentials' })
   async verifyUserCredentials(data: { email: string; password: string }) {
-    this.logger.log(`Received credential verification request for email: ${data.email}`);
+    this.logger.log(
+      `Received credential verification request for email: ${data.email}`,
+    );
     try {
-      const result = await this.userService.verifyUserCredentials(data.email, data.password);
-      
+      const result = await this.userService.verifyUserCredentials(
+        data.email,
+        data.password,
+      );
+
       if (!result.isValid) {
         return {
           status: 'error',
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'Invalid credentials'
-          }
+            message: 'Invalid credentials',
+          },
         };
       }
-      
+
       return {
         status: 'success',
         data: {
           isValid: true,
-          user: result.user
-        }
+          user: result.user,
+        },
       };
     } catch (error) {
       this.logger.error(`Verification failed: ${error.message}`);
@@ -182,8 +194,8 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: 'VERIFICATION_ERROR',
-          message: 'Invalid credentials'
-        }
+          message: 'Invalid credentials',
+        },
       };
     }
   }
@@ -193,22 +205,24 @@ export class UserServiceController {
   async findUserWithAuth(data: { username: string; requestSource: string }) {
     // Xác minh yêu cầu đến từ auth-service
     if (data.requestSource !== 'auth-service') {
-      this.logger.warn(`Unauthorized attempt to access sensitive user data from: ${data.requestSource}`);
+      this.logger.warn(
+        `Unauthorized attempt to access sensitive user data from: ${data.requestSource}`,
+      );
       return {
         status: 'error',
         error: {
           code: 'UNAUTHORIZED_ACCESS',
-          message: 'Only auth-service can access this endpoint'
-        }
+          message: 'Only auth-service can access this endpoint',
+        },
       };
     }
-    
+
     this.logger.log(`Retrieving user with auth data for: ${data.username}`);
     try {
       const user = await this.userService.findUserWithPassword(data.username);
       return {
         status: 'success',
-        data: user
+        data: user,
       };
     } catch (error) {
       this.logger.error(`Failed to find user: ${error.message}`);
@@ -216,8 +230,53 @@ export class UserServiceController {
         status: 'error',
         error: {
           code: error.name || 'FIND_USER_ERROR',
-          message: error.message
-        }
+          message: error.message,
+        },
+      };
+    }
+  }
+  @MessagePattern('ms.user.verifyUserPassword')
+  async verifyUserPassword(data: { userId: string; password: string }) {
+    this.logger.log(`Verifying password for user ID: ${data.userId}`);
+    try {
+      const isValid = await this.userService.verifyUserPassword(data);
+      return {
+        status: 'success',
+        data: {
+          isValid,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Password verification failed: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'PASSWORD_VERIFICATION_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+
+  @MessagePattern('ms.user.updatePassword')
+  async changePassword(data: { userId: string; newPassword: string }) {
+    this.logger.log(`Changing password for user ID: ${data.userId}`);
+    try {
+      await this.userService.changePassword(data.userId, data.newPassword);
+      return {
+        status: 'success',
+        data: {
+          message: 'Password changed successfully',
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to change password: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'PASSWORD_CHANGE_ERROR',
+          message: error.message,
+        },
       };
     }
   }
