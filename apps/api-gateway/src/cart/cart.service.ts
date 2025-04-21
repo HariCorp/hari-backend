@@ -89,7 +89,7 @@ export class CartService {
           response.error.message || 'Failed to add item to cart',
         );
       }
-      return response.data;
+      return { ...response.data, product };
     } catch (error) {
       this.logger.error(`Add to cart failed: ${error.message}`);
       if (

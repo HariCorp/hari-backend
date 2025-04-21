@@ -88,6 +88,10 @@ export class CreateProductDto {
   @Type(() => String)
   tags?: string[] = []; // Thêm danh sách tag cho SEO hoặc tìm kiếm
 
+  @IsString()
+  @IsOptional()
+  location?: string; // Thêm vị trí sản phẩm
+
   constructor(partial: Partial<CreateProductDto>) {
     Object.assign(this, partial);
     if (this.initialStock !== undefined && this.stock === undefined) {
