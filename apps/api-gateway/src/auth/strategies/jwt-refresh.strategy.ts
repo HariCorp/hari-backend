@@ -8,7 +8,10 @@ import { AuthService } from '../auth.service';
 import { JwtStrategy } from './jwt.strategy';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   private readonly logger = new Logger(JwtStrategy.name);
   constructor(
     private readonly configService: ConfigService,
@@ -24,7 +27,6 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       passReqToCallback: true, // Bật để truyền request vào validate
     } as StrategyOptionsWithRequest);
   }
-  
 
   async validate(req: Request, payload: any) {
     const refreshToken = req.cookies?.refreshToken;
@@ -42,6 +44,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       username: payload.username,
       email: payload.email,
       roles: payload.roles,
+      isVerified: payload.isVerified,
       refreshToken,
     };
   }

@@ -13,12 +13,19 @@ import { CreateOrderDto, UpdateOrderDto } from './order.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@app/common';
+import {
+  UserVerifiedGuard,
+  VerificationErrorMessage,
+} from '@app/common/rbac/guards/user-verified.guard';
 
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UserVerifiedGuard)
+  @VerificationErrorMessage(
+    'Tài khoản của bạn chưa được xác minh, bạn không thể chọn phương thức thanh toán bằng tiền mặt! ',
+  )
   create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user) {
     createOrderDto.userId = user.userId;
     return this.orderService.create(createOrderDto);

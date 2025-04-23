@@ -1,4 +1,3 @@
-// apps/auth-service/src/auth-service.service.ts
 import {
   Inject,
   Injectable,
@@ -80,6 +79,7 @@ export class AuthServiceService {
             username: user.username,
             email: user.email,
             roles: user.roles,
+            isVerified: user.isVerified,
             createdAt: user.createdAt,
           },
         },
@@ -157,6 +157,7 @@ export class AuthServiceService {
             username: newUser.username,
             email: newUser.email,
             roles: newUser.roles,
+            isVerified: newUser.isVerified,
           },
         },
       };
@@ -172,9 +173,6 @@ export class AuthServiceService {
     }
   }
 
-  /**
-   * Generate a new access token using a refresh token
-   */
   /**
    * Generate a new access token using a refresh token
    */
@@ -567,21 +565,18 @@ export class AuthServiceService {
     username: string;
     email: string;
     roles: string[];
+    isVerified: boolean;
   }) {
     // Đảm bảo chuyển _id sang string một cách chính xác
     const userId =
       typeof user._id === 'object' ? user._id.toString() : user._id;
 
-    console.log(
-      '🔍 ~ generateTokens ~ apps/auth-service/src/auth-service.service.ts:500 ~ userId:',
-      userId,
-    );
-
     const jwtPayload = {
-      sub: userId, // Chắc chắn sử dụng userId
+      sub: userId,
       username: user.username,
       email: user.email,
       roles: user.roles,
+      isVerified: user.isVerified,
     };
 
     // Get values from config service
@@ -626,6 +621,7 @@ export class AuthServiceService {
         username: user.username,
         email: user.email,
         roles: user.roles,
+        isVerified: user.isVerified,
       },
     };
   }
