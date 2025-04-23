@@ -12,8 +12,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
+  ValidateNested,
 } from 'class-validator';
-import { OrderItem } from './order.schema';
+import { Type } from 'class-transformer';
 
 export class CreateOrderDto {
   @IsString()
@@ -44,10 +46,10 @@ export class CreateOrderDto {
   @IsString()
   shippingAddress: string;
 
-  @IsNotEmpty()
   @IsArray()
-  @IsEnum(OrderItem, { each: true })
-  items: OrderItem[];
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
 
   @IsNotEmpty()
   @IsEnum(ShippingMethod)
@@ -62,6 +64,29 @@ export class CreateOrderDto {
 
   @IsString()
   couponCode?: string;
+
+  @IsString()
+  @IsOptional()
+  orderNumber?: string;
 }
 
 export class UpdateOrderDto {}
+
+class OrderItemDto {
+  @IsString()
+  productId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+
+  @IsNumber()
+  price: number;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @IsNumber()
+  totalPrice: number;
+}

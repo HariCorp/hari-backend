@@ -8,6 +8,8 @@ import { CartServiceController } from './cart-service.controller';
 import { CartServiceService } from './cart-service.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '@app/common';
+import { OrderServiceService } from './order-service.service';
+import { Order, OrderSchema } from 'apps/api-gateway/src/order/order.schema';
 
 @Module({
   imports: [
@@ -25,9 +27,10 @@ import { CommonModule } from '@app/common';
     }),
     MongooseModule.forFeature([
       { name: CartItem.name, schema: CartItemSchema },
+      { name: Order.name, schema: OrderSchema },
     ]),
   ],
   controllers: [CartServiceController],
-  providers: [CartServiceService],
+  providers: [CartServiceService, OrderServiceService],
 })
 export class CartServiceModule {}

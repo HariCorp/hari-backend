@@ -3,11 +3,13 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { CartServiceService } from './cart-service.service';
 import { CreateCartItemDto, UpdateCartItemDto } from '@app/common';
+import { OrderServiceService } from './order-service.service';
 
 @Controller()
 export class CartServiceController {
   constructor(
     private readonly cartServiceService: CartServiceService,
+    private readonly OrderServiceService: OrderServiceService,
   ) {}
 
   @MessagePattern('ms.cart.addItem')
@@ -47,13 +49,15 @@ export class CartServiceController {
   }
 
   @MessagePattern('ms.cart.findById')
-  async findOne(command: { data: { id: string, userId: string } }) {
+  async findOne(command: { data: { id: string; userId: string } }) {
     try {
       const { id, userId } = command.data;
       const cartItem = await this.cartServiceService.findOne(id, userId);
       return { status: 'success', data: cartItem };
     } catch (error) {
-      console.log(`Failed to find cart item by ID: ${JSON.stringify(command.data)}`);
+      console.log(
+        `Failed to find cart item by ID: ${JSON.stringify(command.data)}`,
+      );
       return {
         status: 'error',
         error: {
@@ -65,7 +69,11 @@ export class CartServiceController {
   }
 
   @MessagePattern('ms.cart.updateItem')
-  async update(command: { id: string; data: UpdateCartItemDto; userId: string }) {
+  async update(command: {
+    id: string;
+    data: UpdateCartItemDto;
+    userId: string;
+  }) {
     try {
       const cartItem = await this.cartServiceService.update(
         command.id,
@@ -88,7 +96,10 @@ export class CartServiceController {
   @MessagePattern('ms.cart.removeItem')
   async remove(command: { id: string; userId: string }) {
     try {
-      const result = await this.cartServiceService.remove(command.id, command.userId);
+      const result = await this.cartServiceService.remove(
+        command.id,
+        command.userId,
+      );
       return { status: 'success', data: result };
     } catch (error) {
       console.log(`Failed to remove cart item: ${error.message}`);
@@ -118,4 +129,20 @@ export class CartServiceController {
       };
     }
   }
-} 
+  @MessagePattern('ms.order.create')
+  async createOrder(command) {
+    try {
+      const createOrderDto = command.data;
+      const order = await this.OrderServiceService.createOrder(createOrderDto);
+      return { status: 'success', data: order };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: {
+          code: error.name || 'ADD_TO_CART_ERROR',
+          message: error.message,
+        },
+      };
+    }
+  }
+}
