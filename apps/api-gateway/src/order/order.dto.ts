@@ -14,16 +14,42 @@ import {
   IsString,
   Min,
   ValidateNested,
+  IsMongoId,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+class OrderItemDto {
+  @IsString()
+  @IsMongoId()
+  productId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @IsNumber()
+  @Min(0)
+  totalPrice: number;
+}
 
 export class CreateOrderDto {
   @IsString()
   @IsOptional()
+  @IsMongoId()
   userId?: string;
 
   @IsString()
   @IsNotEmpty()
+  @IsMongoId()
   sellerId: string;
 
   @IsEnum(PaymentMethod)
@@ -32,14 +58,17 @@ export class CreateOrderDto {
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(0)
   shippingFee: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(0)
   subtotal: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(0)
   totalAmount: number;
 
   @IsNotEmpty()
@@ -57,6 +86,7 @@ export class CreateOrderDto {
 
   @IsNotEmpty()
   @IsDate()
+  @Type(() => Date)
   estimatedDeliveryDate: Date;
 
   @IsOptional()
@@ -72,23 +102,106 @@ export class CreateOrderDto {
   orderNumber?: string;
 }
 
-export class UpdateOrderDto {}
-
-class OrderItemDto {
+export class UpdateOrderDto {
+  @IsOptional()
   @IsString()
-  productId: string;
+  @IsMongoId()
+  sellerId?: string;
 
-  @IsNumber()
-  @Min(1)
-  quantity: number;
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+
+  @IsOptional()
+  @IsString()
+  transactionId?: string;
+
+  @IsOptional()
   @IsNumber()
-  price: number;
+  @Min(0)
+  shippingFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tax?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discount?: number;
+
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
+
+  @IsOptional()
+  @IsEnum(ShippingMethod)
+  shippingMethod?: ShippingMethod;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  estimatedDeliveryDate?: Date;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  adminNotes?: string;
+}
+
+export class UpdateOrderStatusDto {
+  @IsNotEmpty()
+  @IsEnum(OrderStatus)
+  status: OrderStatus;
 
   @IsOptional()
   @IsString()
   note?: string;
+}
 
+export class CancelOrderDto {
+  @IsNotEmpty()
+  @IsString()
+  reason: string;
+}
+
+export class FilterOrderDto {
+  @IsOptional()
+  @IsString()
+  @IsMongoId()
+  userId?: string;
+
+  @IsOptional()
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
+
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+
+  @IsOptional()
   @IsNumber()
-  totalPrice: number;
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
 }
