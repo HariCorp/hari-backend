@@ -7,12 +7,13 @@ import {
   Param,
   Delete,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto, UpdateOrderDto } from './order.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '@app/common';
+import { PaymentMethod, RolesGuard } from '@app/common';
 import {
   UserVerifiedGuard,
   VerificationErrorMessage,
@@ -22,11 +23,18 @@ import {
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, UserVerifiedGuard)
-  @VerificationErrorMessage(
-    'Tài khoản của bạn chưa được xác minh, bạn không thể chọn phương thức thanh toán bằng tiền mặt! ',
-  )
-  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user) {
+  @UseGuards(JwtAuthGuard)
+  async create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user) {
+    // Get the user's verification status
+
+    // If payment method is CASH and user is not verified, throw an exception
+    if (createOrderDto.paymentMethod === PaymentMethod.CASH && user.isActive) {
+      throw new UnauthorizedException(
+        'Tài khoản của bạn chưa được xác minh, bạn không thể chọn phương thức thanh toán bằng tiền mặt!',
+      );
+    }
+
+    // Otherwise, proceed with order creation
     createOrderDto.userId = user.userId;
     return this.orderService.create(createOrderDto);
   }

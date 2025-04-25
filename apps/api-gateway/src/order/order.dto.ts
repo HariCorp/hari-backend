@@ -59,9 +59,11 @@ export class CreateOrderDto {
   @IsDate()
   estimatedDeliveryDate: Date;
 
+  @IsOptional()
   @IsString()
-  note?: string;
+  notes?: string;
 
+  @IsOptional()
   @IsString()
   couponCode?: string;
 
