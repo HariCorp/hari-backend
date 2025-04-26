@@ -24,7 +24,7 @@ import {
 } from './order.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PaymentMethod, RolesGuard } from '@app/common';
+import { PaymentMethod, RBAC, RolesGuard } from '@app/common';
 import { OrderStatus, UserRole } from '@app/common/enums';
 import {
   UserVerifiedGuard,
@@ -62,6 +62,7 @@ export class OrderController {
 
   @Get('my-orders')
   @UseGuards(JwtAuthGuard)
+  @RBAC('read', 'order', 'any')
   async findMyOrders(@CurrentUser() user, @Query() filterDto: FilterOrderDto) {
     return this.orderService.findByUser(user.userId, filterDto);
   }
