@@ -85,6 +85,13 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.cart.findById',
 
     'ms.order.create',
+    'ms.order.findByUser',
+    'ms.order.findById',
+    'ms.order.findByUser',
+    'ms.order.delete',
+    'ms.order.findAll',
+    'ms.order.update',
+    'ms.order.updateStatus',
   ];
 
   // Track subscribed topics and connected status

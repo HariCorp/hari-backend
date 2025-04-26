@@ -70,7 +70,11 @@ export class AccessControlFactory {
       .createAny('apiKey')
       .readAny('apiKey')
       .updateAny('apiKey')
-      .deleteAny('apiKey');
+      .deleteAny('apiKey')
+      .createAny('order')
+      .readAny('order')
+      .updateAny('order')
+      .deleteAny('order');
 
     // Seller - can manage own products and read/update own profile
     ac.grant(UserRole.SELLER)
@@ -100,7 +104,9 @@ export class AccessControlFactory {
       .createOwn('aiModel')
       .readAny('aiModel')
       .updateOwn('aiModel')
-      .deleteOwn('aiModel');
+      .deleteOwn('aiModel')
+      .readOwn('order')
+      .createOwn('order');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
@@ -127,7 +133,9 @@ export class AccessControlFactory {
       .createOwn('aiModel')
       .readAny('aiModel')
       .updateOwn('aiModel')
-      .deleteOwn('aiModel');
+      .deleteOwn('aiModel')
+      .createOwn('order')
+      .readOwn('order');
 
     return ac;
   }

@@ -19,7 +19,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class OrderItemDto {
+export class OrderItemDto {
   @IsString()
   @IsMongoId()
   productId: string;
@@ -180,6 +180,11 @@ export class FilterOrderDto {
   userId?: string;
 
   @IsOptional()
+  @IsString()
+  @IsMongoId()
+  sellerId?: string;
+
+  @IsOptional()
   @IsEnum(OrderStatus)
   status?: OrderStatus;
 
@@ -190,18 +195,20 @@ export class FilterOrderDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  page?: number;
+  @Type(() => Number)
+  page?: number = 1;
 
   @IsOptional()
   @IsNumber()
   @Min(1)
-  limit?: number;
+  @Type(() => Number)
+  limit?: number = 10;
 
   @IsOptional()
   @IsString()
-  sortBy?: string;
+  sortBy?: string = 'createdAt';
 
   @IsOptional()
   @IsIn(['asc', 'desc'])
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

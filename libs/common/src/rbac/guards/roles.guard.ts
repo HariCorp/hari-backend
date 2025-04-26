@@ -65,7 +65,6 @@ export class RolesGuard implements CanActivate {
         `Bạn không có quyền ${action} ${resource} này`,
       );
     }
-
     return true;
   }
 }
