@@ -108,6 +108,7 @@ export class OrderController {
    * Get a specific order by ID
    */
   @Get(':id')
+  @RBAC('read', 'order', 'own')
   async findOne(@Param('id') id: string, @CurrentUser() user) {
     this.logger.log(`Getting order with ID: ${id} for user: ${user.username}`);
     const order = await this.orderService.findOne(id);

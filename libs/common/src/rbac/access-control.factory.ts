@@ -106,7 +106,7 @@ export class AccessControlFactory {
       .updateOwn('aiModel')
       .deleteOwn('aiModel')
       .readOwn('order')
-      .createOwn('order');
+      .createAny('order');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
