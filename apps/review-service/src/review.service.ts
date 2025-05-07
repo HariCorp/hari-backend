@@ -106,12 +106,17 @@ export class ReviewService {
 
       // Process each user ID individually
       for (const userId of userIds) {
+        console.log(
+          '🔍 ~ findAll ~ hari-backend/apps/review-service/src/review.service.ts:108 ~ userId:',
+          userId,
+        );
+
         try {
           const singleUserResponse = await this.kafkaProducer.sendAndReceive<
             any,
             any
           >('ms.user.findById', {
-            data: { userId }, // Send only one userId
+            userId, // Send only one userId
             metadata: {
               id: `review-service-${Date.now()}`,
               correlationId: `review-service-${Date.now()}`,
