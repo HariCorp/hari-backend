@@ -79,6 +79,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/cart-service/tsconfig.app.json"
       }
+    },
+    "review-service": {
+      "type": "application",
+      "root": "apps/review-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/review-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/review-service/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,

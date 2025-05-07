@@ -39,7 +39,16 @@ export class AccessControlFactory {
       .createAny('ai')
       .readAny('ai')
       .updateAny('ai')
-      .deleteAny('ai');
+      .deleteAny('ai')
+      .createAny('order')
+      .readAny('order')
+      .updateAny('order')
+      .deleteAny('order')
+      // Review permissions for Super Admin
+      .createAny('review')
+      .readAny('review')
+      .updateAny('review')
+      .deleteAny('review');
 
     // Admin - can manage users (except super admins) and all products
     ac.grant(UserRole.ADMIN)
@@ -74,7 +83,12 @@ export class AccessControlFactory {
       .createAny('order')
       .readAny('order')
       .updateAny('order')
-      .deleteAny('order');
+      .deleteAny('order')
+      // Review permissions for Admin
+      .createAny('review')
+      .readAny('review')
+      .updateAny('review')
+      .deleteAny('review');
 
     // Seller - can manage own products and read/update own profile
     ac.grant(UserRole.SELLER)
@@ -106,7 +120,11 @@ export class AccessControlFactory {
       .updateOwn('aiModel')
       .deleteOwn('aiModel')
       .readOwn('order')
-      .createAny('order');
+      .createAny('order')
+      // Review permissions for Seller - can read any review but only manage reviews on their products
+      .readAny('review')
+      .updateOwn('review')
+      .deleteOwn('review');
 
     // Regular user - can read products and manage own profile
     ac.grant(UserRole.USER)
@@ -135,7 +153,12 @@ export class AccessControlFactory {
       .updateOwn('aiModel')
       .deleteOwn('aiModel')
       .createOwn('order')
-      .readOwn('order');
+      .readOwn('order')
+      // Review permissions for User - can create/read/update/delete own reviews
+      .createOwn('review')
+      .readAny('review')
+      .updateOwn('review')
+      .deleteOwn('review');
 
     return ac;
   }

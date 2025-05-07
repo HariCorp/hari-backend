@@ -12,6 +12,7 @@ import { AiModule } from './ai/ai.module';
 import { UploadModule } from './upload/upload.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { OrderModule } from './order/order.module';
     UploadModule,
     CartModule,
     OrderModule,
+    ReviewModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
