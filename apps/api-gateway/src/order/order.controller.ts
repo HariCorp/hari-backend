@@ -197,6 +197,7 @@ export class OrderController {
    * Cancel an order - Admin, seller, or order owner
    */
   @Patch(':id/cancel')
+  @RBAC('update', 'order', 'own')
   async cancelOrder(
     @Param('id') id: string,
     @Body() cancelOrderDto: CancelOrderDto,

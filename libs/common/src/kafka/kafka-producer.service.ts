@@ -87,11 +87,11 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.order.create',
     'ms.order.findByUser',
     'ms.order.findById',
-    'ms.order.findByUser',
     'ms.order.delete',
     'ms.order.findAll',
     'ms.order.update',
     'ms.order.updateStatus',
+    'ms.order.cancel',
 
     'ms.review.create',
     'ms.review.findAll',

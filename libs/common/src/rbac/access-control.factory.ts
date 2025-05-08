@@ -154,6 +154,8 @@ export class AccessControlFactory {
       .deleteOwn('aiModel')
       .createOwn('order')
       .readOwn('order')
+      .updateOwn('order')
+      .deleteOwn('order')
       // Review permissions for User - can create/read/update/delete own reviews
       .createOwn('review')
       .readAny('review')
