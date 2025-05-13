@@ -4,15 +4,13 @@ import {
   KafkaProducerService,
   MongoErrorCode,
   UpdateCartItemDto,
+  CartItem,
+  CartItemDocument,
 } from '@app/common';
 import { CartItemCreatedEvent } from '@app/common/dto/cart/cart-item-created.event';
 import { DuplicateKeyException } from '@app/common/exceptions/database.exception';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  CartItem,
-  CartItemDocument,
-} from 'apps/api-gateway/src/cart/schemas/cart-item.schema';
 import { FilterQuery, Types } from 'mongoose';
 import { Model } from 'mongoose';
 import { KafkaResponse } from '@app/common/kafka/interfaces/kafka-message.interface';

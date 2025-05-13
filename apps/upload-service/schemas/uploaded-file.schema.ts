@@ -57,4 +57,4 @@ export const UploadedFileSchema = SchemaFactory.createForClass(UploadedFile);
 UploadedFileSchema.index({ publicId: 1 }, { unique: true });
 UploadedFileSchema.index({ userId: 1 });
 UploadedFileSchema.index({ fileType: 1 });
-UploadedFileSchema.index({ createdAt: 1 }); 
+UploadedFileSchema.index({ createdAt: 1 });

@@ -18,8 +18,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RBAC, RolesGuard } from '@app/common';
-import { FileType } from 'apps/upload-service/schemas/uploaded-file.schema';
+import { FileType, RBAC, RolesGuard } from '@app/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('upload')

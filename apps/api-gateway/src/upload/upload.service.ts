@@ -1,6 +1,5 @@
-import { KafkaProducerService } from '@app/common';
+import { FileType, KafkaProducerService } from '@app/common';
 import { Injectable, Logger } from '@nestjs/common';
-import { FileType } from 'apps/upload-service/schemas/uploaded-file.schema';
 
 @Injectable()
 export class UploadService {
@@ -38,7 +37,7 @@ export class UploadService {
       this.logger.log(
         `Gửi yêu cầu upload file: ${fileData.originalName}, kích thước: ${fileData.size} bytes`,
       );
-      
+
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.file.upload',
         command,
@@ -75,7 +74,7 @@ export class UploadService {
 
     try {
       this.logger.log(`Gửi yêu cầu xóa file với publicId: ${publicId}`);
-      
+
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.file.delete',
         message,
@@ -114,8 +113,10 @@ export class UploadService {
     };
 
     try {
-      this.logger.log(`Gửi yêu cầu lấy danh sách files: ${JSON.stringify(filter)}`);
-      
+      this.logger.log(
+        `Gửi yêu cầu lấy danh sách files: ${JSON.stringify(filter)}`,
+      );
+
       const response = await this.kafkaProducer.sendAndReceive<any, any>(
         'ms.file.findAll',
         query,
@@ -131,4 +132,4 @@ export class UploadService {
       throw new Error(`Không thể lấy danh sách files: ${error.message}`);
     }
   }
-} 
+}

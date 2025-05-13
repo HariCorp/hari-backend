@@ -6,15 +6,16 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Order, OrderDocument } from 'apps/api-gateway/src/order/order.schema';
-import { KafkaProducerService } from '@app/common';
-import { OrderStatus, PaymentStatus } from '@app/common/enums';
-import { v4 as uuidv4 } from 'uuid';
 import {
   CreateOrderDto,
   FilterOrderDto,
+  KafkaProducerService,
+  Order,
+  OrderDocument,
   UpdateOrderDto,
-} from 'apps/api-gateway/src/order/order.dto';
+} from '@app/common';
+import { OrderStatus, PaymentStatus } from '@app/common/enums';
+import { v4 as uuidv4 } from 'uuid';
 
 // Extend OrderDocument to include virtuals like canBeCancelled
 interface OrderDocumentWithVirtuals extends OrderDocument {
