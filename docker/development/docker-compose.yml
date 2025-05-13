@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Infrastructure Services
   zookeeper:
     container_name: zookeeper
     image: confluentinc/cp-zookeeper:latest
@@ -8,11 +9,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - '2181:2181'
     networks:
       - hari-network
     healthcheck:
-      test: ["CMD-SHELL", "echo srvr | nc localhost 2181"]
+      test: ['CMD-SHELL', 'echo srvr | nc localhost 2181']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +25,7 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9092:9092"
+      - '9092:9092'
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -32,15 +33,15 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     networks:
       - hari-network
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:29092 --list"]
+      test: ['CMD-SHELL', 'kafka-topics --bootstrap-server kafka:29092 --list']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,11 +56,14 @@ services:
         echo 'Waiting for Kafka to be ready...' &&
         kafka-topics --bootstrap-server kafka:29092 --list &&
         echo 'Creating Kafka topics...' &&
+        # Auth topics
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.register --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.login --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.refresh --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.validate --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.logout --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.changePassword --partitions 1 --replication-factor 1 &&
+        # User topics
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.create --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.findAll --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.findById --partitions 1 --replication-factor 1 &&
@@ -70,6 +74,9 @@ services:
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.authenticate --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.verifyCredentials --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.findUserWithAuth --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.verifyUserPassword --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.updatePassword --partitions 1 --replication-factor 1 &&
+        # Product topics
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.create --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.findAll --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.findById --partitions 1 --replication-factor 1 &&
@@ -78,18 +85,60 @@ services:
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.findByCategory --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.findByUser --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.toggleActive --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.findByIds --partitions 1 --replication-factor 1 &&
+        # Category topics
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.create --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.findAll --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.findById --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.update --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.delete --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.category.getDirectChildren --partitions 1 --replication-factor 1 &&
+        # AI topics
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.apiKey.create --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.ai.getCompletion --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.aimodel.create --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.aimodel.update --partitions 1 --replication-factor 1 &&
+        # Upload topics
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.file.upload --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.file.delete --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.file.findAll --partitions 1 --replication-factor 1 &&
+        # Cart topics
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.addItem --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.findUserCart --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.findById --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.updateItem --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.removeItem --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.clearCart --partitions 1 --replication-factor 1 &&
+        # Order topics
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.create --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.findAll --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.findByUser --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.findById --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.update --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.updateStatus --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.cancel --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.delete --partitions 1 --replication-factor 1 &&
+        # Review topics
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.create --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.findAll --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.findByProductId --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.findOne --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.update --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.delete --partitions 1 --replication-factor 1 &&
+        # Event topics
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.user.created --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.product.created --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.created --partitions 1 --replication-factor 1 &&
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.payment.completed --partitions 1 --replication-factor 1 &&
-        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.apiKey.create --partitions 1 --replication-factor 1 &&
-        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.ai.getCompletion --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.cart.item.created --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.updated --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.review.deleted --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.updated --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.status.updated --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.cancelled --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.order.deleted --partitions 1 --replication-factor 1 &&
+        # DLQ topics (Dead Letter Queue)
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ms.auth.login.dead-letter --partitions 1 --replication-factor 1 &&
         echo 'Successfully created Kafka topics'
       "
     networks:
@@ -102,7 +151,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "9000:9000"
+      - '9000:9000'
     environment:
       KAFKA_BROKERCONNECT: kafka:29092
     networks:
@@ -112,13 +161,13 @@ services:
     container_name: mongo
     image: mongo:latest
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
     networks:
       - hari-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -128,26 +177,28 @@ services:
     container_name: redis
     image: redis:alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     networks:
       - hari-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Application Services
   api-gateway:
     container_name: api-gateway
     build:
-      context: ../..
+      context: .
       dockerfile: docker/api-gateway/Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=development
       - PORT=3000
       - JWT_SECRET=haribackend
+      - JWT_REFRESH_SECRET=haribackendrefresh
       - JWT_ACCESS_EXPIRATION=3600
       - JWT_REFRESH_EXPIRATION=2592000
       - KAFKA_CLIENT_ID=api-gateway
@@ -156,8 +207,8 @@ services:
       - KAFKA_SSL=false
       - SERVICE_NAME=api-gateway
       - REQUEST_TIMEOUT=30000
-      - SUPER_ADMIN_EMAIL=admin@gmail.com
-      - SUPER_ADMIN_PASSWORD=123qwe
+      - SUPER_ADMIN_EMAIL=admin@example.com
+      - SUPER_ADMIN_PASSWORD=Admin@123
       - SUPER_ADMIN_USERNAME=admin
     depends_on:
       kafka-setup:
@@ -167,8 +218,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/api-gateway:/usr/src/app/apps/api-gateway
-      - ../../libs:/usr/src/app/libs
+      - ./apps/api-gateway:/usr/src/app/apps/api-gateway
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
@@ -176,15 +227,16 @@ services:
   auth-service:
     container_name: auth-service
     build:
-      context: ../..
+      context: .
       dockerfile: docker/auth-service/Dockerfile
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - NODE_ENV=development
       - PORT=3001
       - MONGODB_URI=mongodb://mongo:27017/authDB
       - JWT_SECRET=haribackend
+      - JWT_REFRESH_SECRET=haribackendrefresh
       - JWT_ACCESS_EXPIRATION=3600
       - JWT_REFRESH_EXPIRATION=2592000
       - KAFKA_CLIENT_ID=auth-service
@@ -202,8 +254,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/auth-service:/usr/src/app/apps/auth-service
-      - ../../libs:/usr/src/app/libs
+      - ./apps/auth-service:/usr/src/app/apps/auth-service
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
@@ -211,10 +263,10 @@ services:
   user-service:
     container_name: user-service
     build:
-      context: ../..
+      context: .
       dockerfile: docker/user-service/Dockerfile
     ports:
-      - "3002:3002"
+      - '3002:3002'
     environment:
       - NODE_ENV=development
       - PORT=3002
@@ -235,19 +287,19 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/user-service:/usr/src/app/apps/user-service
-      - ../../libs:/usr/src/app/libs
+      - ./apps/user-service:/usr/src/app/apps/user-service
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
-  
+
   product-service:
     container_name: product-service
     build:
-      context: ../..
+      context: .
       dockerfile: docker/product-service/Dockerfile
     ports:
-      - "3003:3003"
+      - '3003:3003'
     environment:
       - NODE_ENV=development
       - PORT=3003
@@ -268,8 +320,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/product-service:/usr/src/app/apps/product-service
-      - ../../libs:/usr/src/app/libs
+      - ./apps/product-service:/usr/src/app/apps/product-service
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
@@ -277,10 +329,10 @@ services:
   payment-service:
     container_name: payment-service
     build:
-      context: ../..
+      context: .
       dockerfile: docker/payment-service/Dockerfile
     ports:
-      - "3004:3004"
+      - '3004:3004'
     environment:
       - NODE_ENV=development
       - PORT=3004
@@ -301,8 +353,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/payment-service:/usr/src/app/apps/payment-service
-      - ../../libs:/usr/src/app/libs
+      - ./apps/payment-service:/usr/src/app/apps/payment-service
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
@@ -310,10 +362,10 @@ services:
   ai-service:
     container_name: ai-service
     build:
-      context: ../..
+      context: .
       dockerfile: docker/ai-service/Dockerfile
     ports:
-      - "3005:3005"
+      - '3005:3005'
     environment:
       - NODE_ENV=development
       - PORT=3005
@@ -326,6 +378,9 @@ services:
       - SERVICE_NAME=ai-service
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - CLOUDINARY_CLOUD_NAME=your_cloud_name
+      - CLOUDINARY_API_KEY=your_api_key
+      - CLOUDINARY_API_SECRET=your_api_secret
     depends_on:
       kafka-setup:
         condition: service_completed_successfully
@@ -334,8 +389,86 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../../apps/ai-service:/usr/src/app/apps/ai-service
-      - ../../libs:/usr/src/app/libs
+      - ./apps/ai-service:/usr/src/app/apps/ai-service
+      - ./libs:/usr/src/app/libs
+      - /usr/src/app/node_modules
+    networks:
+      - hari-network
+
+  upload-service:
+    container_name: upload-service
+    build:
+      context: .
+      dockerfile: apps/upload-service/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/uploadDB
+      - KAFKA_CLIENT_ID=upload-service
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_GROUP_ID=upload-service-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=upload-service
+      - CLOUDINARY_CLOUD_NAME=your_cloud_name
+      - CLOUDINARY_API_KEY=your_api_key
+      - CLOUDINARY_API_SECRET=your_api_secret
+    depends_on:
+      kafka-setup:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./apps/upload-service:/usr/src/app/apps/upload-service
+      - ./libs:/usr/src/app/libs
+      - /usr/src/app/node_modules
+    networks:
+      - hari-network
+
+  cart-service:
+    container_name: cart-service
+    build:
+      context: .
+      dockerfile: apps/cart-service/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/cartDB
+      - KAFKA_CLIENT_ID=cart-service
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_GROUP_ID=cart-service-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=cart-service
+    depends_on:
+      kafka-setup:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./apps/cart-service:/usr/src/app/apps/cart-service
+      - ./libs:/usr/src/app/libs
+      - /usr/src/app/node_modules
+    networks:
+      - hari-network
+
+  review-service:
+    container_name: review-service
+    build:
+      context: .
+      dockerfile: apps/review-service/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/reviewDB
+      - KAFKA_CLIENT_ID=review-service
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_GROUP_ID=review-service-group
+      - KAFKA_SSL=false
+      - SERVICE_NAME=review-service
+    depends_on:
+      kafka-setup:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./apps/review-service:/usr/src/app/apps/review-service
+      - ./libs:/usr/src/app/libs
       - /usr/src/app/node_modules
     networks:
       - hari-network
