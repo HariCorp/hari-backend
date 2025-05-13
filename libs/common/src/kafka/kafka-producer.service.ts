@@ -99,6 +99,11 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.review.findOne',
     'ms.review.update',
     'ms.review.delete',
+
+    'ms.payment.create',
+    'ms.payment.handleMomoCallback',
+    'ms.payment.getById',
+    'ms.payment.getByOrderId',
   ];
 
   // Track subscribed topics and connected status
