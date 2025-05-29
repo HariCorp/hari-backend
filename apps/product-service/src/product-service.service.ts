@@ -122,7 +122,7 @@ export class ProductServiceService {
         filterQuery.stock = hasStock ? { $gt: 0 } : { $gte: 0 };
       }
       if (category) {
-        filterQuery.category = new Types.ObjectId(category.toString());
+        filterQuery.category = category.toString();
       }
       if (userId) {
         filterQuery.userId = userId.toString();
@@ -258,7 +258,7 @@ export class ProductServiceService {
     try {
       const products = await this.productModel
         .find({
-          _id: { $in: productIds.map(id => new Types.ObjectId(id)) }
+          _id: { $in: productIds.map((id) => new Types.ObjectId(id)) },
         })
         .populate('category', 'name')
         .exec();

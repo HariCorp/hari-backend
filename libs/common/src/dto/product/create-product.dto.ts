@@ -25,7 +25,6 @@ export class CreateProductDto {
 
   @IsString()
   @IsOptional()
-  @Length(0, 500, { message: 'Mô tả không được vượt quá 500 ký tự' })
   description?: string;
 
   @IsNumber()
