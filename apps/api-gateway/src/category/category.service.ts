@@ -120,29 +120,47 @@ export class CategoryService {
 
     return response;
   }
-  async getDirectChildren(parentId?: string) {
-    this.logger.log(
-      `Getting direct children of category: ${parentId || 'root categories'}`,
-    );
 
-    const query = {
-      parentId,
+  async getDirectChildren(parentId?: string) {
+    this.logger.log('Getting category children');
+
+    const command = {
+      data: { parentId },
       metadata: {
         id: `api-${Date.now()}`,
         correlationId: `api-${Date.now()}`,
         timestamp: Date.now(),
         source: 'api-gateway',
-        type: 'query',
+        type: 'command',
       },
     };
 
-    const response = await this.kafkaProducer.sendAndReceive<any, any>(
+    const response = await this.kafkaProducer.sendAndReceive(
       'ms.category.getDirectChildren',
-      query,
+      command,
     );
 
-    const data: any = response.data;
+    return response;
+  }
 
-    return data;
+  async getLeafCategories() {
+    this.logger.log('Getting leaf categories');
+
+    const command = {
+      metadata: {
+        id: `api-${Date.now()}`,
+        correlationId: `api-${Date.now()}`,
+        timestamp: Date.now(),
+        source: 'api-gateway',
+        type: 'command',
+      },
+    };
+
+    const response = await this.kafkaProducer.sendAndReceive(
+      'ms.category.getLeafCategories',
+      command,
+    );
+
+    return response;
   }
 }

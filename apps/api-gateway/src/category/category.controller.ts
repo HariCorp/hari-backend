@@ -21,6 +21,10 @@ import { UpdateCategoryDto } from '@app/common/dto/product/update-category.dto';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Get('leaf')
+  async getLeafCategories() {
+    return this.categoryService.getLeafCategories();
+  }
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @RBAC('create', 'category')

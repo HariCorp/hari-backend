@@ -58,6 +58,7 @@ export class KafkaProducerService implements OnModuleInit {
     'ms.category.update',
     'ms.category.delete',
     'ms.category.getDirectChildren',
+    'ms.category.getLeafCategories',
 
     // Event topics
     'ms.user.created',

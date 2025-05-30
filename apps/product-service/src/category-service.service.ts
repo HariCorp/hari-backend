@@ -286,4 +286,42 @@ export class CategoryService {
       };
     }
   }
+
+  /**
+   * Lấy danh sách các category con cuối cùng (leaf categories)
+   * Leaf categories là những category không có category con nào
+   */
+  async getLeafCategories() {
+    try {
+      // Tìm tất cả các category có parentId
+      const categoriesWithParent = await this.categoryModel.find({
+        parentId: { $ne: null }
+      }).select('parentId').exec();
+
+      // Lấy danh sách các parentId
+      const parentIds = categoriesWithParent.map(cat => cat.parentId);
+
+      // Tìm các category không nằm trong danh sách parentId
+      const leafCategories = await this.categoryModel.find({
+        _id: { $nin: parentIds }
+      }).sort({ order: 1 }).exec();
+
+      return {
+        status: 'success',
+        data: {
+          categories: leafCategories,
+          count: leafCategories.length
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Error getting leaf categories: ${error.message}`);
+      return {
+        status: 'error',
+        error: {
+          code: 'LEAF_CATEGORIES_FETCH_ERROR',
+          message: error.message
+        }
+      };
+    }
+  }
 }

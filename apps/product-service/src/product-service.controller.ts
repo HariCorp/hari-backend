@@ -1,6 +1,6 @@
 // apps/product-service/src/product-service.controller.ts
 import { Controller } from '@nestjs/common';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProductServiceService } from './product-service.service';
 import { CategoryService } from './category-service.service';
 import { CreateProductCommand, UpdateProductDto } from '@app/common';
@@ -227,20 +227,12 @@ export class ProductServiceController {
   }
 
   @MessagePattern('ms.category.getDirectChildren')
-  async getDirectChildren(query: { parentId?: string }) {
-    try {
-      const parentId = query.parentId || null;
-      const result = await this.categoryService.getDirectChildren(parentId);
-      return { status: 'success', data: result };
-    } catch (error) {
-      console.log(`Failed to get category children: ${error.message}`);
-      return {
-        status: 'error',
-        error: {
-          code: error.name || 'GET_CATEGORY_CHILDREN_ERROR',
-          message: error.message,
-        },
-      };
-    }
+  async getDirectChildren(@Payload() data: any) {
+    return this.categoryService.getDirectChildren(data.data?.parentId);
+  }
+
+  @MessagePattern('ms.category.getLeafCategories')
+  async getLeafCategories() {
+    return this.categoryService.getLeafCategories();
   }
 }
